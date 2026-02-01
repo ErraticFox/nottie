@@ -28,6 +28,7 @@
         maxX: number;
         maxY: number;
     } | null>(null);
+    let initialPathCommands = $state<PathCommand[] | null>(null);
 
     let canvasRef: HTMLDivElement | undefined = $state();
     let innerCanvasRef: HTMLDivElement | undefined = $state();
@@ -169,37 +170,53 @@
         return getPathBounds(selectedPath.commands);
     });
 
-    // Calculate 8 handle positions from bounds
+    // Calculate 8 handle positions from bounds, accounting for visual padding
     const handlePositions = $derived.by(() => {
         if (!selectionBounds) return null;
+        const zoom = $editorStore.zoom;
+        const padding = 4 / zoom;
         const { minX, minY, maxX, maxY } = selectionBounds;
-        const midX = (minX + maxX) / 2;
-        const midY = (minY + maxY) / 2;
+
+        // These are the coordinates of the visual bounding box edges
+        const vMinX = minX - padding;
+        const vMinY = minY - padding;
+        const vMaxX = maxX + padding;
+        const vMaxY = maxY + padding;
+        const vMidX = (vMinX + vMaxX) / 2;
+        const vMidY = (vMinY + vMaxY) / 2;
+
         return {
-            nw: { x: minX, y: minY },
-            n: { x: midX, y: minY },
-            ne: { x: maxX, y: minY },
-            e: { x: maxX, y: midY },
-            se: { x: maxX, y: maxY },
-            s: { x: midX, y: maxY },
-            sw: { x: minX, y: maxY },
-            w: { x: minX, y: midY },
+            nw: { x: vMinX, y: vMinY },
+            n: { x: vMidX, y: vMinY },
+            ne: { x: vMaxX, y: vMinY },
+            e: { x: vMaxX, y: vMidY },
+            se: { x: vMaxX, y: vMaxY },
+            s: { x: vMidX, y: vMaxY },
+            sw: { x: vMinX, y: vMaxY },
+            w: { x: vMinX, y: vMidY },
         };
     });
 
     function startResize(handle: HandleType, e: PointerEvent) {
-        if (!selectionBounds) return;
+        if (!selectionBounds || !selectedPath) return;
         isResizing = true;
         resizeHandle = handle;
         resizeStartPos = screenToCanvas(e.clientX, e.clientY);
         originalBounds = { ...selectionBounds };
+        initialPathCommands = JSON.parse(JSON.stringify(selectedPath.commands));
         canvasRef?.setPointerCapture(e.pointerId);
         e.stopPropagation();
         e.preventDefault();
     }
 
     function performResize(canvasX: number, canvasY: number) {
-        if (!isResizing || !resizeHandle || !originalBounds || !selectedPath)
+        if (
+            !isResizing ||
+            !resizeHandle ||
+            !originalBounds ||
+            !initialPathCommands ||
+            !selectedPath
+        )
             return;
 
         const { minX, minY, maxX, maxY } = originalBounds;
@@ -210,31 +227,39 @@
         const dx = canvasX - resizeStartPos.x;
         const dy = canvasY - resizeStartPos.y;
 
-        let newMinX = minX,
-            newMinY = minY,
-            newMaxX = maxX,
-            newMaxY = maxY;
+        // Determine which edges are moving and define anchors
+        let scaleX = 1;
+        let scaleY = 1;
+        let anchorX = minX;
+        let anchorY = minY;
 
-        // Update bounds based on which handle is being dragged
-        if (resizeHandle.includes("w")) newMinX = minX + dx;
-        if (resizeHandle.includes("e")) newMaxX = maxX + dx;
-        if (resizeHandle.includes("n")) newMinY = minY + dy;
-        if (resizeHandle.includes("s")) newMaxY = maxY + dy;
+        if (resizeHandle.includes("e")) {
+            const newW = origW + dx;
+            scaleX = newW / origW;
+            anchorX = minX;
+        } else if (resizeHandle.includes("w")) {
+            const newW = origW - dx;
+            scaleX = newW / origW;
+            anchorX = maxX;
+        }
 
-        // Prevent inverted bounds
-        if (newMaxX < newMinX) [newMinX, newMaxX] = [newMaxX, newMinX];
-        if (newMaxY < newMinY) [newMinY, newMaxY] = [newMaxY, newMinY];
+        if (resizeHandle.includes("s")) {
+            const newH = origH + dy;
+            scaleY = newH / origH;
+            anchorY = minY;
+        } else if (resizeHandle.includes("n")) {
+            const newH = origH - dy;
+            scaleY = newH / origH;
+            anchorY = maxY;
+        }
 
-        const scaleX = (newMaxX - newMinX) / origW;
-        const scaleY = (newMaxY - newMinY) / origH;
-
-        // Scale all points in the path
-        const scaledCommands: PathCommand[] = selectedPath.commands.map(
+        // Apply scaling to initial commands
+        const scaledCommands: PathCommand[] = initialPathCommands.map(
             (cmd) => ({
                 ...cmd,
                 points: cmd.points.map((pt) => ({
-                    x: newMinX + (pt.x - minX) * scaleX,
-                    y: newMinY + (pt.y - minY) * scaleY,
+                    x: anchorX + (pt.x - anchorX) * scaleX,
+                    y: anchorY + (pt.y - anchorY) * scaleY,
                 })),
             }),
         );
@@ -244,21 +269,13 @@
             $editorStore.selectedPathId!,
             (p) => ({ ...p, commands: scaledCommands }),
         );
-
-        // Update start position for continuous dragging
-        resizeStartPos = { x: canvasX, y: canvasY };
-        originalBounds = {
-            minX: newMinX,
-            minY: newMinY,
-            maxX: newMaxX,
-            maxY: newMaxY,
-        };
     }
 
     function finishResize() {
         isResizing = false;
         resizeHandle = null;
         originalBounds = null;
+        initialPathCommands = null;
     }
 
     function getHandleCursor(handle: HandleType): string {
@@ -726,7 +743,10 @@
 
                 <!-- Selection Bounding Box -->
                 {#if selectionBounds && handlePositions}
-                    {@const padding = 4}
+                    {@const zoom = $editorStore.zoom}
+                    {@const padding = 4 / zoom}
+                    {@const handleSize = 8 / zoom}
+                    {@const handleOffset = handleSize / 2}
                     {@const x = selectionBounds.minX - padding}
                     {@const y = selectionBounds.minY - padding}
                     {@const w =
@@ -746,26 +766,71 @@
                         height={h}
                         fill="none"
                         stroke="#3b82f6"
-                        stroke-width="1"
-                        stroke-dasharray="4 2"
+                        stroke-width={1 / zoom}
+                        stroke-dasharray="{4 / zoom} {2 / zoom}"
                     />
 
-                    <!-- 8 resize handles -->
+                    <!-- 8 resize handles with anti-overlap logic -->
                     {#each Object.entries(handlePositions) as [handle, pos]}
-                        <rect
-                            x={pos.x - 4}
-                            y={pos.y - 4}
-                            width="8"
-                            height="8"
-                            fill="#ffffff"
-                            stroke="#3b82f6"
-                            stroke-width="1"
-                            style="cursor: {getHandleCursor(
-                                handle as HandleType,
-                            )}; pointer-events: auto;"
-                            onpointerdown={(e) =>
-                                startResize(handle as HandleType, e)}
-                        />
+                        {@const isMid = handle.length === 1}
+
+                        <!-- Hide midpoints if shape is too small horizontally/vertically -->
+                        {@const midVisible =
+                            !isMid ||
+                            (handle === "n" || handle === "s"
+                                ? w > handleSize * 4
+                                : h > handleSize * 4)}
+
+                        <!-- Hide some corner handles if shape is extremely small to prevent full overlap -->
+                        {@const cornerVisible =
+                            !handle.includes("e") || w > handleSize * 1.5}
+                        {@const southVisible =
+                            !handle.includes("s") || h > handleSize * 1.5}
+
+                        {#if midVisible && cornerVisible && southVisible}
+                            <rect
+                                x={pos.x - handleOffset}
+                                y={pos.y - handleOffset}
+                                width={handleSize}
+                                height={handleSize}
+                                fill="#ffffff"
+                                stroke="#3b82f6"
+                                stroke-width={1 / zoom}
+                                style="cursor: {getHandleCursor(
+                                    handle as HandleType,
+                                )}; pointer-events: auto;"
+                                onpointerdown={(e) =>
+                                    startResize(handle as HandleType, e)}
+                            />
+
+                            {#if isMid}
+                                <!-- Labels hide if shape is too small to avoid overlapping with corners -->
+                                {#if handle === "e" || handle === "w" ? h > handleSize * 5 : w > handleSize * 5}
+                                    <text
+                                        x={pos.x +
+                                            (handle === "e"
+                                                ? handleSize * 1.5
+                                                : handle === "w"
+                                                  ? -handleSize * 1.5
+                                                  : 0)}
+                                        y={pos.y +
+                                            (handle === "s"
+                                                ? handleSize * 1.5
+                                                : handle === "n"
+                                                  ? -handleSize * 1.5
+                                                  : 0)}
+                                        text-anchor="middle"
+                                        dominant-baseline="middle"
+                                        fill="#3b82f6"
+                                        font-size={10 / zoom}
+                                        font-weight="bold"
+                                        style="pointer-events: none; user-select: none;"
+                                    >
+                                        {handle.toUpperCase()}
+                                    </text>
+                                {/if}
+                            {/if}
+                        {/if}
                     {/each}
                 {/if}
             </svg>
