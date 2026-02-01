@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { AnimationState, Layer, Keyframe } from '../types';
+import type { AnimationState, Layer, Keyframe, PathData } from '../types';
 
 const initialState: AnimationState = {
     layers: [
@@ -57,6 +57,14 @@ function createAnimationStore() {
             }));
         },
         // Additional actions can be added here
+        addPath: (layerId: string, path: PathData) => {
+            update(state => ({
+                ...state,
+                layers: state.layers.map(l =>
+                    l.id === layerId ? { ...l, paths: [...l.paths, path] } : l
+                )
+            }));
+        },
         reset: () => set(initialState),
         createNewFile: (params: { width: number; height: number; fps: number; totalFrames: number; backgroundColor: string }) => {
             set({

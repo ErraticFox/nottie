@@ -174,7 +174,6 @@
                     {#each penTools as tool}
                         <DropdownMenu.Item
                             onSelect={() => {
-                                currentPenTool = tool;
                                 setActiveTool(tool.id);
                             }}
                         >
@@ -208,7 +207,6 @@
                     {#each shapeTools as tool}
                         <DropdownMenu.Item
                             onSelect={() => {
-                                currentShapeTool = tool;
                                 setActiveTool(tool.id);
                             }}
                         >
