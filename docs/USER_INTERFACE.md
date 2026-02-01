@@ -3,10 +3,25 @@
 ## Header
 
 - menu bar with:
-    [x] File
-    [x] Edit
-    [x] View
-    [x] Help
+    - File
+        [x] New
+        [ ] Open
+        [ ] Save
+        [ ] Save As
+        [ ] Export
+        [ ] Exit
+    - Edit
+        [ ] Undo
+        [ ] Redo
+        [ ] Cut
+        [ ] Copy
+        [ ] Paste
+    - View
+        [x] Zoom In
+        [x] Zoom Out
+        [x] Fit to Screen
+    - Help
+        [ ] About
 - under menu bar, a toolbar with SVG editing tools:
     [x] [DropDown icon] 
         - Select (grabbing whole shape)

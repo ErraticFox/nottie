@@ -14,9 +14,9 @@
         Hand,
         ChevronDown,
     } from "lucide-svelte";
+    import { editorStore } from "$lib/stores/editorStore";
     import NewProjectDialog from "./NewProjectDialog.svelte";
 
-    let activeTool = $state("select");
     let isNewProjectDialogOpen = $state(false);
 
     const selectTools = [
@@ -40,7 +40,7 @@
     let currentShapeTool = $state(shapeTools[0]);
 
     function setActiveTool(toolId: string) {
-        activeTool = toolId;
+        editorStore.setActiveTool(toolId);
     }
 </script>
 
@@ -79,9 +79,20 @@
             <Menubar.Menu>
                 <Menubar.Trigger>View</Menubar.Trigger>
                 <Menubar.Content>
-                    <Menubar.Item>Zoom In</Menubar.Item>
-                    <Menubar.Item>Zoom Out</Menubar.Item>
-                    <Menubar.Item>Fit to Screen</Menubar.Item>
+                    <Menubar.Item
+                        onclick={() =>
+                            editorStore.setZoom($editorStore.zoom + 0.1)}
+                        >Zoom In</Menubar.Item
+                    >
+                    <Menubar.Item
+                        onclick={() =>
+                            editorStore.setZoom(
+                                Math.max(0.1, $editorStore.zoom - 0.1),
+                            )}>Zoom Out</Menubar.Item
+                    >
+                    <Menubar.Item onclick={() => editorStore.resetView()}
+                        >Fit to Screen</Menubar.Item
+                    >
                 </Menubar.Content>
             </Menubar.Menu>
 
@@ -99,7 +110,7 @@
         <!-- Select Group -->
         <div class="flex items-center gap-0.5">
             <Button
-                variant={activeTool === currentSelectTool.id
+                variant={$editorStore.activeTool === currentSelectTool.id
                     ? "secondary"
                     : "ghost"}
                 size="icon"
@@ -135,7 +146,7 @@
         <!-- Pen Group -->
         <div class="flex items-center gap-0.5">
             <Button
-                variant={activeTool === currentPenTool.id
+                variant={$editorStore.activeTool === currentPenTool.id
                     ? "secondary"
                     : "ghost"}
                 size="icon"
@@ -169,7 +180,7 @@
         <!-- Shape Group -->
         <div class="flex items-center gap-0.5">
             <Button
-                variant={activeTool === currentShapeTool.id
+                variant={$editorStore.activeTool === currentShapeTool.id
                     ? "secondary"
                     : "ghost"}
                 size="icon"
@@ -204,7 +215,7 @@
 
         <!-- Simple Tools -->
         <Button
-            variant={activeTool === "text" ? "secondary" : "ghost"}
+            variant={$editorStore.activeTool === "text" ? "secondary" : "ghost"}
             size="icon"
             onclick={() => setActiveTool("text")}
             aria-label="Text Tool"
@@ -213,7 +224,7 @@
         </Button>
 
         <Button
-            variant={activeTool === "hand" ? "secondary" : "ghost"}
+            variant={$editorStore.activeTool === "hand" ? "secondary" : "ghost"}
             size="icon"
             onclick={() => setActiveTool("hand")}
             aria-label="Hand Tool"
