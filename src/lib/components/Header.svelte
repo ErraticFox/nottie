@@ -2,8 +2,6 @@
     import * as Menubar from "$lib/components/ui/menubar";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
     import { Button } from "$lib/components/ui/button";
-    import { Separator } from "$lib/components/ui/separator";
-    import { Toggle } from "$lib/components/ui/toggle";
     import {
         MousePointer2,
         MousePointer,
@@ -17,13 +15,37 @@
         ChevronDown,
     } from "lucide-svelte";
 
-    let selectedTool = $state("select");
+    let activeTool = $state("select");
+
+    const selectTools = [
+        { id: "select", icon: MousePointer2, label: "Select" },
+        { id: "direct_select", icon: MousePointer, label: "Direct Selection" },
+    ];
+
+    const penTools = [
+        { id: "pen", icon: PenTool, label: "Pen" },
+        { id: "add_node", icon: Plus, label: "Add Node" },
+        { id: "remove_node", icon: Minus, label: "Remove Node" },
+    ];
+
+    const shapeTools = [
+        { id: "square", icon: Square, label: "Square" },
+        { id: "circle", icon: Circle, label: "Circle" },
+    ];
+
+    let currentSelectTool = $state(selectTools[0]);
+    let currentPenTool = $state(penTools[0]);
+    let currentShapeTool = $state(shapeTools[0]);
+
+    function setActiveTool(toolId: string) {
+        activeTool = toolId;
+    }
 </script>
 
-<div class="flex flex-col border-b bg-background">
+<header class="border-b">
     <!-- Menu Bar -->
     <div class="px-2 py-1">
-        <Menubar.Root>
+        <Menubar.Root class="border-none shadow-none h-auto p-0">
             <Menubar.Menu>
                 <Menubar.Trigger>File</Menubar.Trigger>
                 <Menubar.Content>
@@ -31,7 +53,8 @@
                     <Menubar.Item>Open</Menubar.Item>
                     <Menubar.Separator />
                     <Menubar.Item>Save</Menubar.Item>
-                    <Menubar.Item>Export</Menubar.Item>
+                    <Menubar.Separator />
+                    <Menubar.Item>Exit</Menubar.Item>
                 </Menubar.Content>
             </Menubar.Menu>
 
@@ -59,139 +82,137 @@
             <Menubar.Menu>
                 <Menubar.Trigger>Help</Menubar.Trigger>
                 <Menubar.Content>
-                    <Menubar.Item>Documentation</Menubar.Item>
                     <Menubar.Item>About</Menubar.Item>
                 </Menubar.Content>
             </Menubar.Menu>
         </Menubar.Root>
     </div>
 
-    <Separator />
-
     <!-- Toolbar -->
-    <div class="flex items-center gap-1 p-2 h-12">
-        <!-- Selection Tools -->
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-                <Button
-                    builders={[builder]}
-                    variant="ghost"
-                    size="icon"
-                    class="w-12 gap-1"
-                    title="Selection Tools"
+    <div class="flex items-center gap-2 p-2 border-t bg-muted/20">
+        <!-- Select Group -->
+        <div class="flex items-center gap-0.5">
+            <Button
+                variant={activeTool === currentSelectTool.id
+                    ? "secondary"
+                    : "ghost"}
+                size="icon"
+                onclick={() => setActiveTool(currentSelectTool.id)}
+                aria-label={currentSelectTool.label}
+            >
+                <currentSelectTool.icon class="h-4 w-4" />
+            </Button>
+            <DropdownMenu.Root>
+                <DropdownMenu.Trigger
+                    class="h-9 px-1 hover:bg-muted focus:outline-none rounded-md flex items-center justify-center"
                 >
-                    {#if selectedTool === "direct-selection"}
-                        <MousePointer size={18} />
-                    {:else}
-                        <MousePointer2 size={18} />
-                    {/if}
-                    <ChevronDown size={12} class="opacity-50" />
-                </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-                <DropdownMenu.Item on:click={() => (selectedTool = "select")}>
-                    <MousePointer2 class="mr-2 h-4 w-4" />
-                    <span>Select</span>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                    on:click={() => (selectedTool = "direct-selection")}
-                >
-                    <MousePointer class="mr-2 h-4 w-4" />
-                    <span>Direct Selection</span>
-                </DropdownMenu.Item>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
+                    <ChevronDown class="h-3 w-3 opacity-50" />
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                    {#each selectTools as tool}
+                        <DropdownMenu.Item
+                            onSelect={() => {
+                                currentSelectTool = tool;
+                                setActiveTool(tool.id);
+                            }}
+                        >
+                            <tool.icon class="h-4 w-4 mr-2" />
+                            {tool.label}
+                        </DropdownMenu.Item>
+                    {/each}
+                </DropdownMenu.Content>
+            </DropdownMenu.Root>
+        </div>
 
-        <!-- Pen Tools -->
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-                <Button
-                    builders={[builder]}
-                    variant="ghost"
-                    size="icon"
-                    class="w-12 gap-1"
-                    title="Pen Tools"
-                >
-                    <PenTool size={18} />
-                    <ChevronDown size={12} class="opacity-50" />
-                </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-                <DropdownMenu.Item on:click={() => (selectedTool = "pen")}>
-                    <PenTool class="mr-2 h-4 w-4" />
-                    <span>Pen Tool</span>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item on:click={() => (selectedTool = "add-node")}>
-                    <div class="relative mr-2 h-4 w-4">
-                        <PenTool class="h-4 w-4" />
-                        <Plus class="absolute -top-1 -right-1 h-2 w-2" />
-                    </div>
-                    <span>Add Node</span>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                    on:click={() => (selectedTool = "remove-node")}
-                >
-                    <div class="relative mr-2 h-4 w-4">
-                        <PenTool class="h-4 w-4" />
-                        <Minus class="absolute -top-1 -right-1 h-2 w-2" />
-                    </div>
-                    <span>Remove Node</span>
-                </DropdownMenu.Item>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <div class="w-px h-6 bg-border mx-1"></div>
 
-        <!-- Shape Tools -->
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild let:builder>
-                <Button
-                    builders={[builder]}
-                    variant="ghost"
-                    size="icon"
-                    class="w-12 gap-1"
-                    title="Shape Tools"
+        <!-- Pen Group -->
+        <div class="flex items-center gap-0.5">
+            <Button
+                variant={activeTool === currentPenTool.id
+                    ? "secondary"
+                    : "ghost"}
+                size="icon"
+                onclick={() => setActiveTool(currentPenTool.id)}
+                aria-label={currentPenTool.label}
+            >
+                <currentPenTool.icon class="h-4 w-4" />
+            </Button>
+            <DropdownMenu.Root>
+                <DropdownMenu.Trigger
+                    class="h-9 px-1 hover:bg-muted focus:outline-none rounded-md flex items-center justify-center"
                 >
-                    {#if selectedTool === "circle"}
-                        <Circle size={18} />
-                    {:else}
-                        <Square size={18} />
-                    {/if}
-                    <ChevronDown size={12} class="opacity-50" />
-                </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-                <DropdownMenu.Item on:click={() => (selectedTool = "square")}>
-                    <Square class="mr-2 h-4 w-4" />
-                    <span>Square</span>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item on:click={() => (selectedTool = "circle")}>
-                    <Circle class="mr-2 h-4 w-4" />
-                    <span>Circle</span>
-                </DropdownMenu.Item>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
+                    <ChevronDown class="h-3 w-3 opacity-50" />
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                    {#each penTools as tool}
+                        <DropdownMenu.Item
+                            onSelect={() => {
+                                currentPenTool = tool;
+                                setActiveTool(tool.id);
+                            }}
+                        >
+                            <tool.icon class="h-4 w-4 mr-2" />
+                            {tool.label}
+                        </DropdownMenu.Item>
+                    {/each}
+                </DropdownMenu.Content>
+            </DropdownMenu.Root>
+        </div>
 
-        <Separator orientation="vertical" class="h-6 mx-1" />
+        <!-- Shape Group -->
+        <div class="flex items-center gap-0.5">
+            <Button
+                variant={activeTool === currentShapeTool.id
+                    ? "secondary"
+                    : "ghost"}
+                size="icon"
+                onclick={() => setActiveTool(currentShapeTool.id)}
+                aria-label={currentShapeTool.label}
+            >
+                <currentShapeTool.icon class="h-4 w-4" />
+            </Button>
+            <DropdownMenu.Root>
+                <DropdownMenu.Trigger
+                    class="h-9 px-1 hover:bg-muted focus:outline-none rounded-md flex items-center justify-center"
+                >
+                    <ChevronDown class="h-3 w-3 opacity-50" />
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content>
+                    {#each shapeTools as tool}
+                        <DropdownMenu.Item
+                            onSelect={() => {
+                                currentShapeTool = tool;
+                                setActiveTool(tool.id);
+                            }}
+                        >
+                            <tool.icon class="h-4 w-4 mr-2" />
+                            {tool.label}
+                        </DropdownMenu.Item>
+                    {/each}
+                </DropdownMenu.Content>
+            </DropdownMenu.Root>
+        </div>
 
-        <!-- Text Tool -->
-        <Toggle
-            pressed={selectedTool === "text"}
-            onPressedChange={() => (selectedTool = "text")}
+        <div class="w-px h-6 bg-border mx-1"></div>
+
+        <!-- Simple Tools -->
+        <Button
+            variant={activeTool === "text" ? "secondary" : "ghost"}
+            size="icon"
+            onclick={() => setActiveTool("text")}
             aria-label="Text Tool"
-            variant="outline"
-            class="w-9 px-0"
         >
-            <Type size={18} />
-        </Toggle>
+            <Type class="h-4 w-4" />
+        </Button>
 
-        <!-- Hand Tool -->
-        <Toggle
-            pressed={selectedTool === "hand"}
-            onPressedChange={() => (selectedTool = "hand")}
+        <Button
+            variant={activeTool === "hand" ? "secondary" : "ghost"}
+            size="icon"
+            onclick={() => setActiveTool("hand")}
             aria-label="Hand Tool"
-            variant="outline"
-            class="w-9 px-0"
         >
-            <Hand size={18} />
-        </Toggle>
+            <Hand class="h-4 w-4" />
+        </Button>
     </div>
-</div>
+</header>
