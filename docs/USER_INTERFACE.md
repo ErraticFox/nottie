@@ -3,25 +3,32 @@
 ## Header
 
 - menu bar with:
-    - File
-    - Edit
-    - View
-    - Help
+    [x] File
+    [x] Edit
+    [x] View
+    [x] Help
 - under menu bar, a toolbar with SVG editing tools:
-    - [DropDown icon] 
+    [x] [DropDown icon] 
         - Select (grabbing whole shape)
         - Direct Selection (grabbing individual points)
-    - [DropDown icon]
+    [x] [DropDown icon]
         - pen tool
         - add node
         - remove node
-    - [DropDown icon]
+    [x] [DropDown icon]
         - square
         - circle
-    - Text tool
-    - Hand tool
+    [x] Text tool
+    [x] Hand tool
 
+## Layers Panel
 
-## Canvas
+[ ] Bottom panel, left of timeline
+[ ] Shows all layers in the animation
+[ ] Each layer has a name, visibility toggle, and lock toggle
+~~- Layers can be reordered by dragging and dropping~~
+~~- Layers can be grouped by dragging and dropping on top of each other~~
 
-- Canvas should be white, with a gray background to break up the white
+## Timeline
+
+[ ] Bottom panel, right of layers panel
