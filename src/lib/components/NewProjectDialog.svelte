@@ -13,6 +13,7 @@
     let fps = $state(30);
     let durationValue = $state(100);
     let durationUnit = $state("frames");
+    let backgroundColor = $state("#ffffff");
 
     function handleCreate() {
         let totalFrames = durationValue;
@@ -25,6 +26,7 @@
             height,
             fps,
             totalFrames,
+            backgroundColor,
         });
         open = false;
     }
@@ -38,6 +40,16 @@
               }
             : undefined,
     );
+
+    const backgroundColorValue = $derived({
+        value: backgroundColor,
+        label:
+            backgroundColor === "#ffffff"
+                ? "White"
+                : backgroundColor === "#000000"
+                  ? "Black"
+                  : "Transparent",
+    });
 </script>
 
 <Dialog.Root bind:open>
@@ -105,6 +117,27 @@
                             </Select.Content>
                         </Select.Root>
                     </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label for="bg-color" class="text-right">Background</Label>
+                <div class="col-span-3">
+                    <Select.Root type="single" bind:value={backgroundColor}>
+                        <Select.Trigger id="bg-color">
+                            {backgroundColor === "#ffffff"
+                                ? "White"
+                                : backgroundColor === "#000000"
+                                  ? "Black"
+                                  : "Transparent"}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="#ffffff">White</Select.Item>
+                            <Select.Item value="#000000">Black</Select.Item>
+                            <Select.Item value="transparent"
+                                >Transparent</Select.Item
+                            >
+                        </Select.Content>
+                    </Select.Root>
                 </div>
             </div>
         </div>

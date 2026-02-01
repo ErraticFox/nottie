@@ -31,7 +31,8 @@ const initialState: AnimationState = {
     fps: 30,
     width: 1920,
     height: 1080,
-    playing: false
+    playing: false,
+    backgroundColor: '#ffffff'
 };
 
 function createAnimationStore() {
@@ -57,13 +58,14 @@ function createAnimationStore() {
         },
         // Additional actions can be added here
         reset: () => set(initialState),
-        createNewFile: (params: { width: number; height: number; fps: number; totalFrames: number }) => {
+        createNewFile: (params: { width: number; height: number; fps: number; totalFrames: number; backgroundColor: string }) => {
             set({
                 ...initialState,
                 width: params.width,
                 height: params.height,
                 fps: params.fps,
                 totalFrames: params.totalFrames,
+                backgroundColor: params.backgroundColor,
                 // Ensure we start with a clean layer and no keyframes (initialState already has this, but explicit is good)
                 layers: [
                     {

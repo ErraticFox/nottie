@@ -107,6 +107,19 @@
                 height: {$animationStore.height}px;
                 transform: translate({$editorStore.pan.x}px, {$editorStore.pan
                 .y}px) scale({$editorStore.zoom});
+                background-color: {$animationStore.backgroundColor ===
+            'transparent'
+                ? '#ffffff'
+                : $animationStore.backgroundColor};
+                background-image: {$animationStore.backgroundColor ===
+            'transparent'
+                ? 'conic-gradient(#e5e5e5 90deg, transparent 90deg 180deg, #e5e5e5 180deg 270deg, transparent 270deg)'
+                : 'none'};
+                background-size: {$animationStore.backgroundColor ===
+            'transparent'
+                ? '20px 20px'
+                : 'auto'};
+                background-position: center;
             "
         >
             <!-- SVG Content will go here -->

@@ -57,6 +57,7 @@ export interface AnimationState {
 	width: number;
 	height: number;
 	playing: boolean;
+	backgroundColor: string;
 }
 
 export interface EditorState {
