@@ -71,6 +71,17 @@ function createAnimationStore() {
                 )
             }));
         },
+        updatePath: (layerId: string, pathId: string, updater: (path: PathData) => PathData) => {
+            update(state => ({
+                ...state,
+                layers: state.layers.map(l =>
+                    l.id === layerId ? {
+                        ...l,
+                        paths: l.paths.map(p => p.id === pathId ? updater(p) : p)
+                    } : l
+                )
+            }));
+        },
         addLayer: (name?: string) => {
             update(state => {
                 const layerNum = state.layers.length + 1;

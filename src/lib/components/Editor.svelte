@@ -17,6 +17,18 @@
     let penPoints = $state<Point[]>([]);
     let penCurrentPos = $state<Point | null>(null);
 
+    // Resize state
+    type HandleType = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+    let isResizing = $state(false);
+    let resizeHandle = $state<HandleType | null>(null);
+    let resizeStartPos = $state<Point>({ x: 0, y: 0 });
+    let originalBounds = $state<{
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+    } | null>(null);
+
     let canvasRef: HTMLDivElement | undefined = $state();
     let innerCanvasRef: HTMLDivElement | undefined = $state();
 
@@ -157,6 +169,112 @@
         return getPathBounds(selectedPath.commands);
     });
 
+    // Calculate 8 handle positions from bounds
+    const handlePositions = $derived.by(() => {
+        if (!selectionBounds) return null;
+        const { minX, minY, maxX, maxY } = selectionBounds;
+        const midX = (minX + maxX) / 2;
+        const midY = (minY + maxY) / 2;
+        return {
+            nw: { x: minX, y: minY },
+            n: { x: midX, y: minY },
+            ne: { x: maxX, y: minY },
+            e: { x: maxX, y: midY },
+            se: { x: maxX, y: maxY },
+            s: { x: midX, y: maxY },
+            sw: { x: minX, y: maxY },
+            w: { x: minX, y: midY },
+        };
+    });
+
+    function startResize(handle: HandleType, e: PointerEvent) {
+        if (!selectionBounds) return;
+        isResizing = true;
+        resizeHandle = handle;
+        resizeStartPos = screenToCanvas(e.clientX, e.clientY);
+        originalBounds = { ...selectionBounds };
+        canvasRef?.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+        e.preventDefault();
+    }
+
+    function performResize(canvasX: number, canvasY: number) {
+        if (!isResizing || !resizeHandle || !originalBounds || !selectedPath)
+            return;
+
+        const { minX, minY, maxX, maxY } = originalBounds;
+        const origW = maxX - minX;
+        const origH = maxY - minY;
+        if (origW === 0 || origH === 0) return;
+
+        const dx = canvasX - resizeStartPos.x;
+        const dy = canvasY - resizeStartPos.y;
+
+        let newMinX = minX,
+            newMinY = minY,
+            newMaxX = maxX,
+            newMaxY = maxY;
+
+        // Update bounds based on which handle is being dragged
+        if (resizeHandle.includes("w")) newMinX = minX + dx;
+        if (resizeHandle.includes("e")) newMaxX = maxX + dx;
+        if (resizeHandle.includes("n")) newMinY = minY + dy;
+        if (resizeHandle.includes("s")) newMaxY = maxY + dy;
+
+        // Prevent inverted bounds
+        if (newMaxX < newMinX) [newMinX, newMaxX] = [newMaxX, newMinX];
+        if (newMaxY < newMinY) [newMinY, newMaxY] = [newMaxY, newMinY];
+
+        const scaleX = (newMaxX - newMinX) / origW;
+        const scaleY = (newMaxY - newMinY) / origH;
+
+        // Scale all points in the path
+        const scaledCommands: PathCommand[] = selectedPath.commands.map(
+            (cmd) => ({
+                ...cmd,
+                points: cmd.points.map((pt) => ({
+                    x: newMinX + (pt.x - minX) * scaleX,
+                    y: newMinY + (pt.y - minY) * scaleY,
+                })),
+            }),
+        );
+
+        animationStore.updatePath(
+            $editorStore.selectedLayerId!,
+            $editorStore.selectedPathId!,
+            (p) => ({ ...p, commands: scaledCommands }),
+        );
+
+        // Update start position for continuous dragging
+        resizeStartPos = { x: canvasX, y: canvasY };
+        originalBounds = {
+            minX: newMinX,
+            minY: newMinY,
+            maxX: newMaxX,
+            maxY: newMaxY,
+        };
+    }
+
+    function finishResize() {
+        isResizing = false;
+        resizeHandle = null;
+        originalBounds = null;
+    }
+
+    function getHandleCursor(handle: HandleType): string {
+        const cursors: Record<HandleType, string> = {
+            nw: "nwse-resize",
+            ne: "nesw-resize",
+            se: "nwse-resize",
+            sw: "nesw-resize",
+            n: "ns-resize",
+            s: "ns-resize",
+            e: "ew-resize",
+            w: "ew-resize",
+        };
+        return cursors[handle];
+    }
+
     function handleWheel(e: WheelEvent) {
         e.preventDefault();
         if (e.ctrlKey) {
@@ -229,6 +347,12 @@
     }
 
     function handlePointerMove(e: PointerEvent) {
+        if (isResizing) {
+            const point = screenToCanvas(e.clientX, e.clientY);
+            performResize(point.x, point.y);
+            return;
+        }
+
         if (isPanning) {
             const dx = e.clientX - lastPointerPos.x;
             const dy = e.clientY - lastPointerPos.y;
@@ -248,6 +372,12 @@
     }
 
     function handlePointerUp(e: PointerEvent) {
+        if (isResizing) {
+            finishResize();
+            canvasRef?.releasePointerCapture(e.pointerId);
+            return;
+        }
+
         if (isPanning) {
             isPanning = false;
         } else if (isDrawing) {
@@ -595,7 +725,7 @@
                 {/if}
 
                 <!-- Selection Bounding Box -->
-                {#if selectionBounds}
+                {#if selectionBounds && handlePositions}
                     {@const padding = 4}
                     {@const x = selectionBounds.minX - padding}
                     {@const y = selectionBounds.minY - padding}
@@ -620,16 +750,21 @@
                         stroke-dasharray="4 2"
                     />
 
-                    <!-- Corner handles -->
-                    {#each [[x, y], [x + w, y], [x, y + h], [x + w, y + h]] as [cx, cy]}
+                    <!-- 8 resize handles -->
+                    {#each Object.entries(handlePositions) as [handle, pos]}
                         <rect
-                            x={cx - 4}
-                            y={cy - 4}
+                            x={pos.x - 4}
+                            y={pos.y - 4}
                             width="8"
                             height="8"
                             fill="#ffffff"
                             stroke="#3b82f6"
                             stroke-width="1"
+                            style="cursor: {getHandleCursor(
+                                handle as HandleType,
+                            )}; pointer-events: auto;"
+                            onpointerdown={(e) =>
+                                startResize(handle as HandleType, e)}
                         />
                     {/each}
                 {/if}
