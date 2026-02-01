@@ -146,6 +146,7 @@
                     stroke: "#000000",
                     strokeWidth: 2,
                     fill: "none",
+                    visible: true,
                 };
 
                 // Find an unlocked layer, or create one if none exist
@@ -348,12 +349,14 @@
                 {#each $animationStore.layers as layer}
                     {#if layer.visible}
                         {#each layer.paths as path}
-                            <path
-                                d={commandsToPathString(path.commands)}
-                                fill={path.fill || "none"}
-                                stroke={path.stroke || "#000000"}
-                                stroke-width={path.strokeWidth || 1}
-                            />
+                            {#if path.visible}
+                                <path
+                                    d={commandsToPathString(path.commands)}
+                                    fill={path.fill || "none"}
+                                    stroke={path.stroke || "#000000"}
+                                    stroke-width={path.strokeWidth || 1}
+                                />
+                            {/if}
                         {/each}
                     {/if}
                 {/each}

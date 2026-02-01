@@ -132,8 +132,27 @@
             {#if isExpanded(layer.id) && layer.paths.length > 0}
                 {#each layer.paths as path, index (path.id)}
                     <div
-                        class="flex items-center h-8 pl-8 pr-2 border-b border-border/30 hover:bg-muted/30 transition-colors group select-none"
+                        class="flex items-center h-8 pl-6 pr-2 border-b border-border/30 hover:bg-muted/30 transition-colors group select-none"
                     >
+                        <!-- Visibility Toggle -->
+                        <button
+                            class="p-1 mr-1 text-muted-foreground hover:text-foreground rounded-sm"
+                            onclick={() =>
+                                animationStore.togglePathVisibility(
+                                    layer.id,
+                                    path.id,
+                                )}
+                            aria-label={path.visible
+                                ? "Hide shape"
+                                : "Show shape"}
+                        >
+                            {#if path.visible}
+                                <Eye size={12} />
+                            {:else}
+                                <EyeOff size={12} />
+                            {/if}
+                        </button>
+
                         <!-- Shape Icon -->
                         <Square size={12} class="text-muted-foreground mr-2" />
 

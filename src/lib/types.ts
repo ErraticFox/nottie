@@ -28,6 +28,7 @@ export interface PathData {
 	fill?: string;
 	stroke?: string;
 	strokeWidth?: number;
+	visible: boolean;
 }
 
 export interface Layer {

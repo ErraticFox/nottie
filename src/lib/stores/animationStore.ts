@@ -46,7 +46,20 @@ function createAnimationStore() {
             update(state => ({
                 ...state,
                 layers: state.layers.map(l =>
-                    l.id === layerId ? { ...l, paths: [...l.paths, path] } : l
+                    l.id === layerId ? { ...l, paths: [...l.paths, { ...path, visible: path.visible ?? true }] } : l
+                )
+            }));
+        },
+        togglePathVisibility: (layerId: string, pathId: string) => {
+            update(state => ({
+                ...state,
+                layers: state.layers.map(l =>
+                    l.id === layerId ? {
+                        ...l,
+                        paths: l.paths.map(p =>
+                            p.id === pathId ? { ...p, visible: !p.visible } : p
+                        )
+                    } : l
                 )
             }));
         },
