@@ -7,6 +7,7 @@
       "dependencies": {
         "@types/uuid": "^11.0.0",
         "bezier-js": "^6.1.4",
+        "immer": "^11.1.3",
         "lucide-svelte": "^0.563.0",
         "mode-watcher": "^1.1.0",
         "uuid": "^13.0.0",
@@ -285,6 +286,8 @@
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, ""],
 
     "https-proxy-agent": ["https-proxy-agent@7.0.6", "", { "dependencies": { "agent-base": "^7.1.2", "debug": "4" } }, "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw=="],
+
+    "immer": ["immer@11.1.3", "", {}, "sha512-6jQTc5z0KJFtr1UgFpIL3N9XSC3saRaI9PwWtzM2pSqkNGtiNkYY2OSwkOGDK2XcTRcLb1pi/aNkKZz0nxVH4Q=="],
 
     "inline-style-parser": ["inline-style-parser@0.2.7", "", {}, ""],
 

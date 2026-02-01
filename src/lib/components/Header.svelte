@@ -15,7 +15,10 @@
         ChevronDown,
     } from "lucide-svelte";
     import { editorStore } from "$lib/stores/editorStore";
+    import { animationStore } from "$lib/stores/animationStore";
     import NewProjectDialog from "./NewProjectDialog.svelte";
+
+    const history = animationStore.history;
 
     let isNewProjectDialogOpen = $state(false);
 
@@ -76,8 +79,20 @@
             <Menubar.Menu>
                 <Menubar.Trigger>Edit</Menubar.Trigger>
                 <Menubar.Content>
-                    <Menubar.Item>Undo</Menubar.Item>
-                    <Menubar.Item>Redo</Menubar.Item>
+                    <Menubar.Item
+                        onclick={() => animationStore.undo()}
+                        disabled={!$history.canUndo}
+                    >
+                        Undo
+                        <Menubar.Shortcut>⌘Z</Menubar.Shortcut>
+                    </Menubar.Item>
+                    <Menubar.Item
+                        onclick={() => animationStore.redo()}
+                        disabled={!$history.canRedo}
+                    >
+                        Redo
+                        <Menubar.Shortcut>⇧⌘Z</Menubar.Shortcut>
+                    </Menubar.Item>
                     <Menubar.Separator />
                     <Menubar.Item>Cut</Menubar.Item>
                     <Menubar.Item>Copy</Menubar.Item>

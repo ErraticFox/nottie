@@ -1,5 +1,9 @@
 import { writable } from 'svelte/store';
 import type { AnimationState, Layer, Keyframe, PathData } from '../types';
+import { produce, produceWithPatches, enablePatches, applyPatches, type Patch } from 'immer';
+
+// Enable Immer patches for undo/redo
+enablePatches();
 
 const initialState: AnimationState = {
     layers: [
@@ -21,70 +25,143 @@ const initialState: AnimationState = {
     backgroundColor: '#ffffff'
 };
 
+const HISTORY_LIMIT = 10000;
+
 function createAnimationStore() {
     const { subscribe, set, update } = writable<AnimationState>(initialState);
 
+    // History stacks - stored outside the reactive AnimationState to avoid overhead
+    let undoStack: Patch[][] = [];
+    let redoStack: Patch[][] = [];
+    let isApplyingHistory = false;
+
+    // Reactive history state
+    const historyState = writable({ canUndo: false, canRedo: false });
+
+    const updateHistoryState = () => {
+        historyState.set({
+            canUndo: undoStack.length > 0,
+            canRedo: redoStack.length > 0
+        });
+    };
+
+    const recordAction = (updater: (draft: AnimationState) => void) => {
+        if (isApplyingHistory) return;
+
+        update(state => {
+            const [nextState, patches, inversePatches] = produceWithPatches(
+                state,
+                updater
+            );
+
+            // Only record if something actually changed
+            if (patches.length > 0) {
+                undoStack.push(inversePatches);
+                redoStack = []; // Clear redo stack on new action
+
+                if (undoStack.length > HISTORY_LIMIT) {
+                    undoStack.shift();
+                }
+                updateHistoryState();
+            }
+            return nextState;
+        });
+    };
+
     return {
         subscribe,
+        history: { subscribe: historyState.subscribe },
+        undo: () => {
+            const inversePatches = undoStack.pop();
+            if (!inversePatches) return;
+
+            isApplyingHistory = true;
+            update(state => {
+                const [nextState, patches] = produceWithPatches(
+                    state,
+                    (draft) => applyPatches(draft, inversePatches)
+                );
+
+                redoStack.push(patches);
+                if (redoStack.length > HISTORY_LIMIT) {
+                    redoStack.shift();
+                }
+                updateHistoryState();
+                return nextState;
+            });
+            isApplyingHistory = false;
+        },
+        redo: () => {
+            const redoPatches = redoStack.pop();
+            if (!redoPatches) return;
+
+            isApplyingHistory = true;
+            update(state => {
+                const [nextState, patches] = produceWithPatches(
+                    state,
+                    (draft) => applyPatches(draft, redoPatches)
+                );
+
+                undoStack.push(patches);
+                if (undoStack.length > HISTORY_LIMIT) {
+                    undoStack.shift();
+                }
+                updateHistoryState();
+                return nextState;
+            });
+            isApplyingHistory = false;
+        },
         toggleLayerVisibility: (layerId: string) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? { ...l, visible: !l.visible } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) layer.visible = !layer.visible;
+            });
         },
         toggleLayerLock: (layerId: string) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? { ...l, locked: !l.locked } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) layer.locked = !layer.locked;
+            });
         },
         addPath: (layerId: string, path: PathData) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? { ...l, paths: [...l.paths, { ...path, visible: path.visible ?? true }] } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) {
+                    layer.paths.push({ ...path, visible: path.visible ?? true });
+                }
+            });
         },
         togglePathVisibility: (layerId: string, pathId: string) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? {
-                        ...l,
-                        paths: l.paths.map(p =>
-                            p.id === pathId ? { ...p, visible: !p.visible } : p
-                        )
-                    } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) {
+                    const path = layer.paths.find(p => p.id === pathId);
+                    if (path) path.visible = !path.visible;
+                }
+            });
         },
         deletePath: (layerId: string, pathId: string) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? { ...l, paths: l.paths.filter(p => p.id !== pathId) } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) {
+                    layer.paths = layer.paths.filter(p => p.id !== pathId);
+                }
+            });
         },
         updatePath: (layerId: string, pathId: string, updater: (path: PathData) => PathData) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.map(l =>
-                    l.id === layerId ? {
-                        ...l,
-                        paths: l.paths.map(p => p.id === pathId ? updater(p) : p)
-                    } : l
-                )
-            }));
+            recordAction(draft => {
+                const layer = draft.layers.find(l => l.id === layerId);
+                if (layer) {
+                    const pathIndex = layer.paths.findIndex(p => p.id === pathId);
+                    if (pathIndex !== -1) {
+                        layer.paths[pathIndex] = updater(layer.paths[pathIndex]);
+                    }
+                }
+            });
         },
         addLayer: (name?: string) => {
-            update(state => {
-                const layerNum = state.layers.length + 1;
+            recordAction(draft => {
+                const layerNum = draft.layers.length + 1;
                 const newLayer: Layer = {
                     id: 'layer-' + Date.now(),
                     name: name || `Layer ${layerNum}`,
@@ -92,19 +169,20 @@ function createAnimationStore() {
                     visible: true,
                     locked: false
                 };
-                return {
-                    ...state,
-                    layers: [newLayer, ...state.layers]
-                };
+                draft.layers.unshift(newLayer);
             });
         },
         deleteLayer: (layerId: string) => {
-            update(state => ({
-                ...state,
-                layers: state.layers.filter(l => l.id !== layerId)
-            }));
+            recordAction(draft => {
+                draft.layers = draft.layers.filter(l => l.id !== layerId);
+            });
         },
-        reset: () => set(initialState),
+        reset: () => {
+            set(initialState);
+            undoStack = [];
+            redoStack = [];
+            updateHistoryState();
+        },
         createNewFile: (params: { width: number; height: number; fps: number; totalFrames: number; backgroundColor: string }) => {
             set({
                 ...initialState,
@@ -124,6 +202,9 @@ function createAnimationStore() {
                 ],
                 keyframes: []
             });
+            undoStack = [];
+            redoStack = [];
+            updateHistoryState();
         }
     };
 }

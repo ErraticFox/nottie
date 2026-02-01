@@ -51,7 +51,8 @@ export function parseSVG(svgString: string): ParsedSVG {
 			commands,
 			fill: pathEl.getAttribute('fill') || undefined,
 			stroke: pathEl.getAttribute('stroke') || undefined,
-			strokeWidth: parseFloat(pathEl.getAttribute('stroke-width') || '0') || undefined
+			strokeWidth: parseFloat(pathEl.getAttribute('stroke-width') || '0') || undefined,
+			visible: true
 		};
 
 		// Handle "none" fill
@@ -394,7 +395,8 @@ function rectToPath(rectEl: Element): PathData | null {
 		commands,
 		fill: rectEl.getAttribute('fill') || undefined,
 		stroke: rectEl.getAttribute('stroke') || undefined,
-		strokeWidth: parseFloat(rectEl.getAttribute('stroke-width') || '0') || undefined
+		strokeWidth: parseFloat(rectEl.getAttribute('stroke-width') || '0') || undefined,
+		visible: true
 	};
 }
 
@@ -472,7 +474,8 @@ function ellipseToPathInternal(
 		commands,
 		fill: element.getAttribute('fill') || undefined,
 		stroke: element.getAttribute('stroke') || undefined,
-		strokeWidth: parseFloat(element.getAttribute('stroke-width') || '0') || undefined
+		strokeWidth: parseFloat(element.getAttribute('stroke-width') || '0') || undefined,
+		visible: true
 	};
 }
 
@@ -494,7 +497,8 @@ function polygonToPath(polygonEl: Element): PathData | null {
 		commands,
 		fill: polygonEl.getAttribute('fill') || undefined,
 		stroke: polygonEl.getAttribute('stroke') || undefined,
-		strokeWidth: parseFloat(polygonEl.getAttribute('stroke-width') || '0') || undefined
+		strokeWidth: parseFloat(polygonEl.getAttribute('stroke-width') || '0') || undefined,
+		visible: true
 	};
 }
 
@@ -515,7 +519,8 @@ function polylineToPath(polylineEl: Element): PathData | null {
 		commands,
 		fill: polylineEl.getAttribute('fill') || undefined,
 		stroke: polylineEl.getAttribute('stroke') || undefined,
-		strokeWidth: parseFloat(polylineEl.getAttribute('stroke-width') || '0') || undefined
+		strokeWidth: parseFloat(polylineEl.getAttribute('stroke-width') || '0') || undefined,
+		visible: true
 	};
 }
 
@@ -535,7 +540,8 @@ function lineToPath(lineEl: Element): PathData | null {
 		commands,
 		fill: lineEl.getAttribute('fill') || undefined,
 		stroke: lineEl.getAttribute('stroke') || undefined,
-		strokeWidth: parseFloat(lineEl.getAttribute('stroke-width') || '0') || undefined
+		strokeWidth: parseFloat(lineEl.getAttribute('stroke-width') || '0') || undefined,
+		visible: true
 	};
 }
 

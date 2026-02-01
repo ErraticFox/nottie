@@ -267,7 +267,7 @@
         animationStore.updatePath(
             $editorStore.selectedLayerId!,
             $editorStore.selectedPathId!,
-            (p) => ({ ...p, commands: scaledCommands }),
+            (p) => ({ ...p, commands: scaledCommands }) as PathData,
         );
     }
 
@@ -360,6 +360,7 @@
         if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
             finishPenPath();
             e.preventDefault();
+            e.stopPropagation();
         }
     }
 
@@ -543,19 +544,30 @@
         if (e.code === "Space" && !e.repeat) isSpacePressed = true;
         if (e.key === "Shift") shiftPressed = true;
 
-        // Pen tool: Enter/Escape to finish path
+        // Pen tool: Enter/Escape to finish path - Handle this early before other shortcuts
         if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" || e.key === "Escape" || e.key === "Esc") {
                 finishPenPath();
                 e.preventDefault();
+                e.stopPropagation();
                 return;
             }
-            if (e.key === "Escape") {
-                // Finish the path (keeps black segments, cancels blue preview)
-                finishPenPath();
-                e.preventDefault();
-                return;
+        }
+
+        // Undo/Redo shortcuts
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+            if (e.shiftKey) {
+                animationStore.redo();
+            } else {
+                animationStore.undo();
             }
+            e.preventDefault();
+            return;
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+            animationStore.redo();
+            e.preventDefault();
+            return;
         }
 
         if (isDrawing) return;
