@@ -1,5 +1,8 @@
 # AGENTS.md
 
+## IMPORTANT
+- ONLY use bun instead of npm or another package manager
+
 ## WHAT
 
 - Application for animating SVGs

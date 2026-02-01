@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { animationStore } from '$lib/stores/animation.svelte';
-	import { commandsToPathString } from '$lib/utils/svg-parser';
-	import type { Point } from '$lib/types';
+	import { animationStore } from "$lib/stores/animation.svelte";
+	import { commandsToPathString } from "$lib/utils/svg-parser";
+	import type { Point } from "$lib/types";
 
 	let svgElement: SVGSVGElement;
 	let isDragging = $state(false);
@@ -38,12 +38,13 @@
 			path.commands.forEach((cmd, cmdIndex) => {
 				cmd.points.forEach((point, ptIndex) => {
 					const isHandle =
-						(cmd.type === 'C' && ptIndex < 2) || (cmd.type === 'Q' && ptIndex === 0);
+						(cmd.type === "C" && ptIndex < 2) ||
+						(cmd.type === "Q" && ptIndex === 0);
 
 					let parentPoint: Point | undefined;
-					if (isHandle && cmd.type === 'C') {
+					if (isHandle && cmd.type === "C") {
 						parentPoint = cmd.points[2];
-					} else if (isHandle && cmd.type === 'Q') {
+					} else if (isHandle && cmd.type === "Q") {
 						parentPoint = cmd.points[1];
 					}
 
@@ -53,7 +54,7 @@
 						pointIndex: ptIndex,
 						point,
 						isHandle,
-						parentPoint
+						parentPoint,
 					});
 				});
 			});
@@ -68,12 +69,14 @@
 		event: MouseEvent,
 		pathId: string,
 		commandIndex: number,
-		pointIndex: number
+		pointIndex: number,
 	) {
 		if (event.button !== 0) return; // Left click only
 
 		// Check if path's layer is locked
-		const layer = animState.layers.find((l) => l.paths.some((p) => p.id === pathId));
+		const layer = animState.layers.find((l) =>
+			l.paths.some((p) => p.id === pathId),
+		);
 		if (layer?.locked) return;
 
 		event.preventDefault();
@@ -86,7 +89,7 @@
 		animationStore.setSelection(
 			layer?.id || null,
 			pathId,
-			commandIndex * 100 + pointIndex // Composite index
+			commandIndex * 100 + pointIndex, // Composite index
 		);
 	}
 
@@ -104,7 +107,7 @@
 			dragTarget.pathId,
 			dragTarget.commandIndex,
 			dragTarget.pointIndex,
-			{ x: svgPt.x, y: svgPt.y }
+			{ x: svgPt.x, y: svgPt.y },
 		);
 	}
 
@@ -120,7 +123,11 @@
 	}
 
 	// Check if a point is selected
-	function isPointSelected(pathId: string, commandIndex: number, pointIndex: number): boolean {
+	function isPointSelected(
+		pathId: string,
+		commandIndex: number,
+		pointIndex: number,
+	): boolean {
 		return (
 			editorState.selectedPathId === pathId &&
 			editorState.selectedPointIndex === commandIndex * 100 + pointIndex
@@ -143,10 +150,24 @@
 		role="img"
 		aria-label="SVG canvas"
 	>
+		>
+		<!-- Canvas background -->
+		<rect width="100%" height="100%" fill="white" />
+
 		<!-- Background grid -->
 		<defs>
-			<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-				<path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="0.5" />
+			<pattern
+				id="grid"
+				width="20"
+				height="20"
+				patternUnits="userSpaceOnUse"
+			>
+				<path
+					d="M 20 0 L 0 0 0 20"
+					fill="none"
+					stroke="#e0e0e0"
+					stroke-width="0.5"
+				/>
 			</pattern>
 		</defs>
 		<rect width="100%" height="100%" fill="url(#grid)" />
@@ -155,8 +176,8 @@
 		{#each paths as path (path.id)}
 			<path
 				d={commandsToPathString(path.commands)}
-				fill={path.fill || 'none'}
-				stroke={path.stroke || '#000'}
+				fill={path.fill || "none"}
+				stroke={path.stroke || "#000"}
 				stroke-width={path.strokeWidth || 1}
 				class="editor-path"
 				class:selected={editorState.selectedPathId === path.id}
@@ -185,15 +206,21 @@
 				cy={cp.point.y}
 				r={cp.isHandle ? 4 : 6}
 				fill={isPointSelected(cp.pathId, cp.commandIndex, cp.pointIndex)
-					? '#ff6b6b'
+					? "#ff6b6b"
 					: cp.isHandle
-						? '#4dabf7'
-						: '#228be6'}
+						? "#4dabf7"
+						: "#228be6"}
 				stroke="#fff"
 				stroke-width="1.5"
 				class="control-point"
 				class:handle={cp.isHandle}
-				onmousedown={(e) => handleMouseDown(e, cp.pathId, cp.commandIndex, cp.pointIndex)}
+				onmousedown={(e) =>
+					handleMouseDown(
+						e,
+						cp.pathId,
+						cp.commandIndex,
+						cp.pointIndex,
+					)}
 				role="button"
 				tabindex="0"
 				aria-label="Control point"
@@ -213,7 +240,7 @@
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
-		background: #f8f9fa;
+		background: transparent;
 		border: 1px solid #dee2e6;
 		border-radius: 4px;
 	}
