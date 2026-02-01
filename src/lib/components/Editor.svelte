@@ -147,11 +147,20 @@
                     strokeWidth: 2,
                     fill: "none",
                 };
-                const activeLayer = $animationStore.layers.find(
-                    (l) => !l.locked,
-                );
-                if (activeLayer)
+
+                // Find an unlocked layer, or create one if none exist
+                let activeLayer = $animationStore.layers.find((l) => !l.locked);
+
+                if (!activeLayer) {
+                    // No unlocked layer exists, create Layer 1
+                    animationStore.addLayer("Layer 1");
+                    // The new layer is added at the beginning, re-read from store
+                    activeLayer = $animationStore.layers[0];
+                }
+
+                if (activeLayer) {
                     animationStore.addPath(activeLayer.id, newPath);
+                }
             }
         }
         canvasRef?.releasePointerCapture(e.pointerId);

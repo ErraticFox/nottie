@@ -9,20 +9,6 @@ const initialState: AnimationState = {
             paths: [],
             visible: true,
             locked: false
-        },
-        {
-            id: 'layer-2',
-            name: 'Layer 2',
-            paths: [],
-            visible: true,
-            locked: true
-        },
-        {
-            id: 'layer-3',
-            name: 'Background',
-            paths: [],
-            visible: false,
-            locked: false
         }
     ],
     keyframes: [],
@@ -56,13 +42,42 @@ function createAnimationStore() {
                 )
             }));
         },
-        // Additional actions can be added here
         addPath: (layerId: string, path: PathData) => {
             update(state => ({
                 ...state,
                 layers: state.layers.map(l =>
                     l.id === layerId ? { ...l, paths: [...l.paths, path] } : l
                 )
+            }));
+        },
+        deletePath: (layerId: string, pathId: string) => {
+            update(state => ({
+                ...state,
+                layers: state.layers.map(l =>
+                    l.id === layerId ? { ...l, paths: l.paths.filter(p => p.id !== pathId) } : l
+                )
+            }));
+        },
+        addLayer: (name?: string) => {
+            update(state => {
+                const layerNum = state.layers.length + 1;
+                const newLayer: Layer = {
+                    id: 'layer-' + Date.now(),
+                    name: name || `Layer ${layerNum}`,
+                    paths: [],
+                    visible: true,
+                    locked: false
+                };
+                return {
+                    ...state,
+                    layers: [newLayer, ...state.layers]
+                };
+            });
+        },
+        deleteLayer: (layerId: string) => {
+            update(state => ({
+                ...state,
+                layers: state.layers.filter(l => l.id !== layerId)
             }));
         },
         reset: () => set(initialState),
@@ -74,7 +89,6 @@ function createAnimationStore() {
                 fps: params.fps,
                 totalFrames: params.totalFrames,
                 backgroundColor: params.backgroundColor,
-                // Ensure we start with a clean layer and no keyframes (initialState already has this, but explicit is good)
                 layers: [
                     {
                         id: 'layer-1',

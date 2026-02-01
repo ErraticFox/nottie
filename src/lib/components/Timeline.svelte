@@ -11,7 +11,7 @@
         Timeline
     </div>
     <div
-        class="flex-1 p-4 text-muted-foreground text-sm flex items-center justify-center border-l"
+        class="flex-1 p-4 text-muted-foreground text-sm flex items-center justify-center"
     >
         Timeline View (Placeholder)
     </div>
