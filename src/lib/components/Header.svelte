@@ -35,9 +35,18 @@
         { id: "circle", icon: Circle, label: "Circle" },
     ];
 
-    let currentSelectTool = $state(selectTools[0]);
-    let currentPenTool = $state(penTools[0]);
-    let currentShapeTool = $state(shapeTools[0]);
+    let currentSelectTool = $derived(
+        selectTools.find((t) => t.id === $editorStore.toolGroups["select"]) ||
+            selectTools[0],
+    );
+    let currentPenTool = $derived(
+        penTools.find((t) => t.id === $editorStore.toolGroups["pen"]) ||
+            penTools[0],
+    );
+    let currentShapeTool = $derived(
+        shapeTools.find((t) => t.id === $editorStore.toolGroups["shape"]) ||
+            shapeTools[0],
+    );
 
     function setActiveTool(toolId: string) {
         editorStore.setActiveTool(toolId);

@@ -69,6 +69,53 @@
         if (e.code === "Space" && !e.repeat) {
             isSpacePressed = true;
         }
+
+        // Tool Hotkeys
+        if (
+            document.activeElement?.tagName === "INPUT" ||
+            document.activeElement?.tagName === "TEXTAREA"
+        )
+            return;
+
+        const key = e.key.toLowerCase();
+        const shift = e.shiftKey;
+
+        switch (key) {
+            case "v":
+                if (shift) {
+                    editorStore.cycleToolGroup("select");
+                } else {
+                    editorStore.useToolFromGroup("select");
+                }
+                break;
+            case "p":
+                if (shift) {
+                    editorStore.cycleToolGroup("pen");
+                } else {
+                    editorStore.useToolFromGroup("pen");
+                }
+                break;
+            case "m":
+                if (shift) {
+                    editorStore.cycleToolGroup("shape");
+                } else {
+                    editorStore.setActiveTool("square");
+                }
+                break;
+            case "l":
+                if (shift) {
+                    editorStore.cycleToolGroup("shape");
+                } else {
+                    editorStore.setActiveTool("circle");
+                }
+                break;
+            case "t":
+                editorStore.setActiveTool("text");
+                break;
+            case "h":
+                editorStore.setActiveTool("hand");
+                break;
+        }
     }
 
     function handleKeyUp(e: KeyboardEvent) {
