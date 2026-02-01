@@ -1,5 +1,6 @@
 <script lang="ts">
     import { animationStore } from "$lib/stores/animationStore";
+    import { editorStore } from "$lib/stores/editorStore";
     import {
         Eye,
         EyeOff,
@@ -29,18 +30,19 @@
         } else {
             collapsedLayers.add(layerId);
         }
-        collapsedLayers = new Set(collapsedLayers); // Trigger reactivity
-    }
-
-    function getShapeIcon(pathId: string) {
-        // Simple heuristic: if path has curves (C commands), it's likely a circle
-        // This is a basic approach - could be enhanced with metadata
-        return pathId.includes("circle") ? Circle : Square;
+        collapsedLayers = new Set(collapsedLayers);
     }
 
     function getShapeName(path: { id: string }, index: number) {
-        // Generate a user-friendly name
         return `Shape ${index + 1}`;
+    }
+
+    function handleLayerClick(layerId: string) {
+        editorStore.selectLayer(layerId);
+    }
+
+    function handlePathClick(layerId: string, pathId: string) {
+        editorStore.selectPath(layerId, pathId);
     }
 </script>
 
@@ -62,13 +64,22 @@
             <!-- Layer Row -->
             <div
                 class={cn(
-                    "flex items-center h-9 px-2 border-b border-border/50 hover:bg-muted/50 transition-colors group select-none",
+                    "flex items-center h-9 px-2 border-b border-border/50 hover:bg-muted/50 transition-colors group select-none cursor-pointer",
+                    $editorStore.selectedLayerId === layer.id &&
+                        !$editorStore.selectedPathId &&
+                        "bg-primary/10",
                 )}
+                onclick={() => handleLayerClick(layer.id)}
+                role="button"
+                tabindex="0"
             >
                 <!-- Expand/Collapse Toggle -->
                 <button
                     class="p-1 text-muted-foreground hover:text-foreground rounded-sm"
-                    onclick={() => toggleExpand(layer.id)}
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        toggleExpand(layer.id);
+                    }}
                     aria-label={isExpanded(layer.id) ? "Collapse" : "Expand"}
                 >
                     {#if isExpanded(layer.id)}
@@ -81,8 +92,10 @@
                 <!-- Visibility Toggle -->
                 <button
                     class="p-1 text-muted-foreground hover:text-foreground rounded-sm"
-                    onclick={() =>
-                        animationStore.toggleLayerVisibility(layer.id)}
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        animationStore.toggleLayerVisibility(layer.id);
+                    }}
                     aria-label={layer.visible ? "Hide layer" : "Show layer"}
                 >
                     {#if layer.visible}
@@ -95,7 +108,10 @@
                 <!-- Lock Toggle -->
                 <button
                     class="p-1 text-muted-foreground hover:text-foreground rounded-sm"
-                    onclick={() => animationStore.toggleLayerLock(layer.id)}
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        animationStore.toggleLayerLock(layer.id);
+                    }}
                     aria-label={layer.locked ? "Unlock layer" : "Lock layer"}
                 >
                     {#if layer.locked}
@@ -121,7 +137,10 @@
                 <!-- Delete Layer -->
                 <button
                     class="p-1 text-muted-foreground hover:text-destructive rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                    onclick={() => animationStore.deleteLayer(layer.id)}
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        animationStore.deleteLayer(layer.id);
+                    }}
                     aria-label="Delete layer"
                 >
                     <Trash2 size={14} />
@@ -132,16 +151,25 @@
             {#if isExpanded(layer.id) && layer.paths.length > 0}
                 {#each layer.paths as path, index (path.id)}
                     <div
-                        class="flex items-center h-8 pl-6 pr-2 border-b border-border/30 hover:bg-muted/30 transition-colors group select-none"
+                        class={cn(
+                            "flex items-center h-8 pl-6 pr-2 border-b border-border/30 hover:bg-muted/30 transition-colors group select-none cursor-pointer",
+                            $editorStore.selectedPathId === path.id &&
+                                "bg-primary/15",
+                        )}
+                        onclick={() => handlePathClick(layer.id, path.id)}
+                        role="button"
+                        tabindex="0"
                     >
                         <!-- Visibility Toggle -->
                         <button
                             class="p-1 mr-1 text-muted-foreground hover:text-foreground rounded-sm"
-                            onclick={() =>
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 animationStore.togglePathVisibility(
                                     layer.id,
                                     path.id,
-                                )}
+                                );
+                            }}
                             aria-label={path.visible
                                 ? "Hide shape"
                                 : "Show shape"}
@@ -166,8 +194,10 @@
                         <!-- Delete Shape -->
                         <button
                             class="p-1 text-muted-foreground hover:text-destructive rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                            onclick={() =>
-                                animationStore.deletePath(layer.id, path.id)}
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                animationStore.deletePath(layer.id, path.id);
+                            }}
                             aria-label="Delete shape"
                         >
                             <Trash2 size={12} />

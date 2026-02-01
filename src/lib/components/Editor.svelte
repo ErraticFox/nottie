@@ -13,6 +13,10 @@
     let currentPos = $state<Point>({ x: 0, y: 0 });
     let shiftPressed = $state(false);
 
+    // Pen tool state
+    let penPoints = $state<Point[]>([]);
+    let penCurrentPos = $state<Point | null>(null);
+
     let canvasRef: HTMLDivElement | undefined = $state();
     let innerCanvasRef: HTMLDivElement | undefined = $state();
 
@@ -77,6 +81,82 @@
         return "";
     });
 
+    // Calculate bounding box from path commands
+    function getPathBounds(commands: PathCommand[]): {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+    } | null {
+        if (commands.length === 0) return null;
+
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+        for (const cmd of commands) {
+            for (const pt of cmd.points) {
+                minX = Math.min(minX, pt.x);
+                minY = Math.min(minY, pt.y);
+                maxX = Math.max(maxX, pt.x);
+                maxY = Math.max(maxY, pt.y);
+            }
+        }
+
+        if (minX === Infinity) return null;
+        return { minX, minY, maxX, maxY };
+    }
+
+    // Find which path the click point is inside (checks bounds)
+    function findPathAtPoint(
+        x: number,
+        y: number,
+    ): { layerId: string; pathId: string } | null {
+        // Iterate layers in reverse (top layer first)
+        for (let i = $animationStore.layers.length - 1; i >= 0; i--) {
+            const layer = $animationStore.layers[i];
+            if (!layer.visible || layer.locked) continue;
+
+            // Iterate paths in reverse (topmost first)
+            for (let j = layer.paths.length - 1; j >= 0; j--) {
+                const path = layer.paths[j];
+                if (!path.visible) continue;
+
+                const bounds = getPathBounds(path.commands);
+                if (!bounds) continue;
+
+                // Add some padding for easier selection
+                const padding = (path.strokeWidth || 1) + 4;
+                if (
+                    x >= bounds.minX - padding &&
+                    x <= bounds.maxX + padding &&
+                    y >= bounds.minY - padding &&
+                    y <= bounds.maxY + padding
+                ) {
+                    return { layerId: layer.id, pathId: path.id };
+                }
+            }
+        }
+        return null;
+    }
+
+    // Get the currently selected path data for rendering selection box
+    const selectedPath = $derived.by(() => {
+        if (!$editorStore.selectedPathId || !$editorStore.selectedLayerId)
+            return null;
+        const layer = $animationStore.layers.find(
+            (l) => l.id === $editorStore.selectedLayerId,
+        );
+        if (!layer) return null;
+        return layer.paths.find((p) => p.id === $editorStore.selectedPathId);
+    });
+
+    const selectionBounds = $derived.by(() => {
+        if (!selectedPath) return null;
+        return getPathBounds(selectedPath.commands);
+    });
+
     function handleWheel(e: WheelEvent) {
         e.preventDefault();
         if (e.ctrlKey) {
@@ -115,6 +195,37 @@
             canvasRef?.setPointerCapture(e.pointerId);
             e.preventDefault();
         }
+
+        // Pen tool: click to add point (left-click only)
+        if ($editorStore.activeTool === "pen" && e.button === 0) {
+            const point = screenToCanvas(e.clientX, e.clientY);
+            penPoints = [...penPoints, point];
+            e.preventDefault();
+        }
+
+        // Select tool: click to select shape
+        if (
+            ($editorStore.activeTool === "select" ||
+                $editorStore.activeTool === "direct_select") &&
+            e.button === 0
+        ) {
+            const point = screenToCanvas(e.clientX, e.clientY);
+            const hit = findPathAtPoint(point.x, point.y);
+            if (hit) {
+                editorStore.selectPath(hit.layerId, hit.pathId);
+            } else {
+                editorStore.clearSelection();
+            }
+            e.preventDefault();
+        }
+    }
+
+    function handleContextMenu(e: MouseEvent) {
+        // Right-click finishes pen path if in progress (keeps black segments, cancels blue preview)
+        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+            finishPenPath();
+            e.preventDefault();
+        }
     }
 
     function handlePointerMove(e: PointerEvent) {
@@ -128,6 +239,11 @@
             lastPointerPos = { x: e.clientX, y: e.clientY };
         } else if (isDrawing) {
             currentPos = screenToCanvas(e.clientX, e.clientY);
+        }
+
+        // Pen tool: track cursor position for preview line
+        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+            penCurrentPos = screenToCanvas(e.clientX, e.clientY);
         }
     }
 
@@ -236,9 +352,64 @@
         }
     }
 
+    function finishPenPath() {
+        if (penPoints.length < 2) {
+            // Need at least 2 points to create a path
+            penPoints = [];
+            penCurrentPos = null;
+            return;
+        }
+
+        // Convert pen points to path commands
+        const commands: PathCommand[] = penPoints.map((pt, i) => ({
+            type: i === 0 ? "M" : "L",
+            points: [pt],
+        })) as PathCommand[];
+
+        const newPath: PathData = {
+            id: "path-" + Math.random().toString(36).substring(2, 11),
+            commands,
+            stroke: "#000000",
+            strokeWidth: 2,
+            fill: "none",
+            visible: true,
+        };
+
+        // Find an unlocked layer, or create one if none exist
+        let activeLayer = $animationStore.layers.find((l) => !l.locked);
+
+        if (!activeLayer) {
+            animationStore.addLayer("Layer 1");
+            activeLayer = $animationStore.layers[0];
+        }
+
+        if (activeLayer) {
+            animationStore.addPath(activeLayer.id, newPath);
+        }
+
+        // Reset pen state
+        penPoints = [];
+        penCurrentPos = null;
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
         if (e.code === "Space" && !e.repeat) isSpacePressed = true;
         if (e.key === "Shift") shiftPressed = true;
+
+        // Pen tool: Enter/Escape to finish path
+        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+            if (e.key === "Enter") {
+                finishPenPath();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === "Escape") {
+                // Finish the path (keeps black segments, cancels blue preview)
+                finishPenPath();
+                e.preventDefault();
+                return;
+            }
+        }
 
         if (isDrawing) return;
         if (
@@ -249,6 +420,13 @@
 
         const key = e.key.toLowerCase();
         const shift = e.shiftKey;
+
+        // Finish pen path when switching to any tool
+        const toolKeys = ["v", "p", "m", "l", "t", "h"];
+        if (toolKeys.includes(key) && penPoints.length > 0) {
+            finishPenPath();
+        }
+
         if (key === "v")
             shift
                 ? editorStore.cycleToolGroup("select")
@@ -305,6 +483,7 @@
         onpointermove={handlePointerMove}
         onpointerup={handlePointerUp}
         onpointercancel={handlePointerUp}
+        oncontextmenu={handleContextMenu}
         style="cursor: {isPanning ||
         $editorStore.activeTool === 'hand' ||
         isSpacePressed
@@ -314,7 +493,8 @@
             : isDrawing
               ? 'crosshair'
               : $editorStore.activeTool === 'square' ||
-                  $editorStore.activeTool === 'circle'
+                  $editorStore.activeTool === 'circle' ||
+                  $editorStore.activeTool === 'pen'
                 ? 'crosshair'
                 : 'default'};"
         role="presentation"
@@ -370,6 +550,88 @@
                         stroke-width="2"
                         stroke-dasharray="4 2"
                     />
+                {/if}
+
+                <!-- Pen Tool Preview -->
+                {#if penPoints.length > 0}
+                    <!-- Committed path segments (black stroke) -->
+                    {#if penPoints.length > 1}
+                        <path
+                            d={penPoints
+                                .map((pt, i) =>
+                                    i === 0
+                                        ? `M ${pt.x} ${pt.y}`
+                                        : `L ${pt.x} ${pt.y}`,
+                                )
+                                .join(" ")}
+                            fill="none"
+                            stroke="#000000"
+                            stroke-width="2"
+                        />
+                    {/if}
+
+                    <!-- Preview line to cursor (blue dotted) -->
+                    {#if penCurrentPos}
+                        <path
+                            d={`M ${penPoints[penPoints.length - 1].x} ${penPoints[penPoints.length - 1].y} L ${penCurrentPos.x} ${penCurrentPos.y}`}
+                            fill="none"
+                            stroke="#3b82f6"
+                            stroke-width="2"
+                            stroke-dasharray="4 2"
+                        />
+                    {/if}
+
+                    <!-- Anchor points -->
+                    {#each penPoints as pt}
+                        <circle
+                            cx={pt.x}
+                            cy={pt.y}
+                            r="4"
+                            fill="#ffffff"
+                            stroke="#3b82f6"
+                            stroke-width="1.5"
+                        />
+                    {/each}
+                {/if}
+
+                <!-- Selection Bounding Box -->
+                {#if selectionBounds}
+                    {@const padding = 4}
+                    {@const x = selectionBounds.minX - padding}
+                    {@const y = selectionBounds.minY - padding}
+                    {@const w =
+                        selectionBounds.maxX -
+                        selectionBounds.minX +
+                        padding * 2}
+                    {@const h =
+                        selectionBounds.maxY -
+                        selectionBounds.minY +
+                        padding * 2}
+
+                    <!-- Bounding box -->
+                    <rect
+                        {x}
+                        {y}
+                        width={w}
+                        height={h}
+                        fill="none"
+                        stroke="#3b82f6"
+                        stroke-width="1"
+                        stroke-dasharray="4 2"
+                    />
+
+                    <!-- Corner handles -->
+                    {#each [[x, y], [x + w, y], [x, y + h], [x + w, y + h]] as [cx, cy]}
+                        <rect
+                            x={cx - 4}
+                            y={cy - 4}
+                            width="8"
+                            height="8"
+                            fill="#ffffff"
+                            stroke="#3b82f6"
+                            stroke-width="1"
+                        />
+                    {/each}
                 {/if}
             </svg>
         </div>

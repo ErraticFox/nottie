@@ -11,6 +11,8 @@ export interface EditorState {
     zoom: number;
     pan: { x: number; y: number };
     toolGroups: Record<string, string>; // groupId -> activeToolId
+    selectedLayerId: string | null;
+    selectedPathId: string | null;
 }
 
 const initialState: EditorState = {
@@ -21,7 +23,9 @@ const initialState: EditorState = {
         'select': 'select',
         'pen': 'pen',
         'shape': 'square'
-    }
+    },
+    selectedLayerId: null,
+    selectedPathId: null
 };
 
 const GROUP_MAPPING: Record<string, string[]> = {
@@ -68,8 +72,24 @@ function createEditorStore() {
         setZoom: (zoom: number) => update(state => ({ ...state, zoom })),
         setPan: (x: number, y: number) => update(state => ({ ...state, pan: { x, y } })),
         resetView: () => update(state => ({ ...state, zoom: 1, pan: { x: 0, y: 0 } })),
+        selectPath: (layerId: string, pathId: string) => update(state => ({
+            ...state,
+            selectedLayerId: layerId,
+            selectedPathId: pathId
+        })),
+        selectLayer: (layerId: string) => update(state => ({
+            ...state,
+            selectedLayerId: layerId,
+            selectedPathId: null
+        })),
+        clearSelection: () => update(state => ({
+            ...state,
+            selectedLayerId: null,
+            selectedPathId: null
+        })),
         reset: () => set(initialState)
     };
 }
 
 export const editorStore = createEditorStore();
+
