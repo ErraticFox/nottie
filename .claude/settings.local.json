@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=JSON.parse(require('fs').readFileSync(0,'utf8')).tool_input.file_path; if(/\\.(svelte|ts)$/.test(f)) process.exit(0); else process.exit(1);\" && npm run check"
+          }
+        ]
+      }
+    ]
+  }
+}
