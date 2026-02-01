@@ -56,7 +56,27 @@ function createAnimationStore() {
             }));
         },
         // Additional actions can be added here
-        reset: () => set(initialState)
+        reset: () => set(initialState),
+        createNewFile: (params: { width: number; height: number; fps: number; totalFrames: number }) => {
+            set({
+                ...initialState,
+                width: params.width,
+                height: params.height,
+                fps: params.fps,
+                totalFrames: params.totalFrames,
+                // Ensure we start with a clean layer and no keyframes (initialState already has this, but explicit is good)
+                layers: [
+                    {
+                        id: 'layer-1',
+                        name: 'Layer 1',
+                        paths: [],
+                        visible: true,
+                        locked: false
+                    }
+                ],
+                keyframes: []
+            });
+        }
     };
 }
 

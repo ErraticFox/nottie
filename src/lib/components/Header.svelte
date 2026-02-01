@@ -14,8 +14,10 @@
         Hand,
         ChevronDown,
     } from "lucide-svelte";
+    import NewProjectDialog from "./NewProjectDialog.svelte";
 
     let activeTool = $state("select");
+    let isNewProjectDialogOpen = $state(false);
 
     const selectTools = [
         { id: "select", icon: MousePointer2, label: "Select" },
@@ -49,7 +51,11 @@
             <Menubar.Menu>
                 <Menubar.Trigger>File</Menubar.Trigger>
                 <Menubar.Content>
-                    <Menubar.Item>New</Menubar.Item>
+                    <Menubar.Item
+                        onclick={() => (isNewProjectDialogOpen = true)}
+                    >
+                        New
+                    </Menubar.Item>
                     <Menubar.Item>Open</Menubar.Item>
                     <Menubar.Separator />
                     <Menubar.Item>Save</Menubar.Item>
@@ -216,3 +222,5 @@
         </Button>
     </div>
 </header>
+
+<NewProjectDialog bind:open={isNewProjectDialogOpen} />
