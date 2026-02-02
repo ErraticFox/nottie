@@ -584,7 +584,7 @@
         const shift = e.shiftKey;
 
         // Finish pen path when switching to any tool
-        const toolKeys = ["v", "p", "m", "l", "t", "h"];
+        const toolKeys = ["v", "p", "m", "l", "t", "h", "a"];
         if (toolKeys.includes(key) && hasPenPoints) {
             finishPenPath();
         }
@@ -592,7 +592,8 @@
         if (key === "v")
             shift
                 ? editorStore.cycleToolGroup("select")
-                : editorStore.useToolFromGroup("select");
+                : editorStore.setActiveTool("select");
+        else if (key === "a") editorStore.setActiveTool("direct_select");
         else if (key === "p")
             shift
                 ? editorStore.cycleToolGroup("pen")
