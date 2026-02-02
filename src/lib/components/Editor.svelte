@@ -20,6 +20,15 @@
     let penCurrentPos = $state<Point | null>(null);
     let hasPenPoints = $derived(penPoints.length > 0);
 
+    // Direct Selection state
+    let selectedPoint = $state<{
+        commandIndex: number;
+        pointIndex: number;
+    } | null>(null);
+    let isDraggingPoint = $state(false);
+    let pointDragStartPos = $state<Point>({ x: 0, y: 0 });
+    let initialPointPos = $state<Point>({ x: 0, y: 0 });
+
     // Resize state
     type HandleType = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
     let isResizing = $state(false);
@@ -124,7 +133,6 @@
         return { minX, minY, maxX, maxY };
     }
 
-    // Find which path the click point is inside (checks bounds)
     function findPathAtPoint(
         x: number,
         y: number,
@@ -151,6 +159,30 @@
                     y <= bounds.maxY + padding
                 ) {
                     return { layerId: layer.id, pathId: path.id };
+                }
+            }
+        }
+        return null;
+    }
+
+    function getAnchorAtPoint(
+        x: number,
+        y: number,
+        pathData: PathData,
+    ): { commandIndex: number; pointIndex: number } | null {
+        const hitRadius = 6 / $editorStore.zoom; // Constant screen size radius
+
+        for (let i = 0; i < pathData.commands.length; i++) {
+            const cmd = pathData.commands[i];
+            // Check all points in the command (anchors and control points)
+            // For now, we mainly care about the main anchor which is usually the last point
+            // But let's check all for completeness, or just the last one for anchors
+            for (let j = 0; j < cmd.points.length; j++) {
+                const pt = cmd.points[j];
+                const dx = pt.x - x;
+                const dy = pt.y - y;
+                if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
+                    return { commandIndex: i, pointIndex: j };
                 }
             }
         }
@@ -341,12 +373,46 @@
             e.preventDefault();
         }
 
+        // Direct Select tool: handle anchor clicking/selection
+        if ($editorStore.activeTool === "direct_select" && e.button === 0) {
+            const point = screenToCanvas(e.clientX, e.clientY);
+
+            // If we have a selected path, check for anchor hits first
+            if (selectedPath) {
+                const anchorHit = getAnchorAtPoint(
+                    point.x,
+                    point.y,
+                    selectedPath,
+                );
+                if (anchorHit) {
+                    selectedPoint = anchorHit;
+                    isDraggingPoint = true;
+                    pointDragStartPos = point;
+                    const cmd = selectedPath.commands[anchorHit.commandIndex];
+                    initialPointPos = { ...cmd.points[anchorHit.pointIndex] };
+                    canvasRef?.setPointerCapture(e.pointerId);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }
+
+            // If no anchor hit, behave like normal selection (select path)
+            const hit = findPathAtPoint(point.x, point.y);
+            if (hit) {
+                editorStore.selectPath(hit.layerId, hit.pathId);
+                // Clear point selection when switching paths
+                selectedPoint = null;
+            } else {
+                editorStore.clearSelection();
+                selectedPoint = null;
+            }
+            e.preventDefault();
+            return;
+        }
+
         // Select tool: click to select shape
-        if (
-            ($editorStore.activeTool === "select" ||
-                $editorStore.activeTool === "direct_select") &&
-            e.button === 0
-        ) {
+        if ($editorStore.activeTool === "select" && e.button === 0) {
             const point = screenToCanvas(e.clientX, e.clientY);
             const hit = findPathAtPoint(point.x, point.y);
             if (hit) {
@@ -386,6 +452,36 @@
             currentPos = screenToCanvas(e.clientX, e.clientY);
         }
 
+        // Direct Select: drag point
+        if (isDraggingPoint && selectedPoint && selectedPath) {
+            const currentPos = screenToCanvas(e.clientX, e.clientY);
+            const dx = currentPos.x - pointDragStartPos.x;
+            const dy = currentPos.y - pointDragStartPos.y;
+
+            // Update the specific point
+            // Create a new commands array with the updated point
+            const newCommands = selectedPath.commands.map((cmd, i) => {
+                if (i !== selectedPoint!.commandIndex) return cmd;
+
+                const newPoints = cmd.points.map((pt, j) => {
+                    if (j !== selectedPoint!.pointIndex) return pt;
+                    return {
+                        x: initialPointPos.x + dx,
+                        y: initialPointPos.y + dy,
+                    };
+                });
+
+                return { ...cmd, points: newPoints };
+            });
+
+            animationStore.updatePath(
+                $editorStore.selectedLayerId!,
+                $editorStore.selectedPathId!,
+                (p) => ({ ...p, commands: newCommands }),
+            );
+            return;
+        }
+
         // Pen tool: track cursor position for preview line
         if ($editorStore.activeTool === "pen" && hasPenPoints) {
             penCurrentPos = screenToCanvas(e.clientX, e.clientY);
@@ -395,6 +491,12 @@
     function handlePointerUp(e: PointerEvent) {
         if (isResizing) {
             finishResize();
+            canvasRef?.releasePointerCapture(e.pointerId);
+            return;
+        }
+
+        if (isDraggingPoint) {
+            isDraggingPoint = false;
             canvasRef?.releasePointerCapture(e.pointerId);
             return;
         }
@@ -627,8 +729,11 @@
             shift
                 ? editorStore.cycleToolGroup("select")
                 : editorStore.setActiveTool("select");
-        else if (key === "a") editorStore.setActiveTool("direct_select");
-        else if (key === "p")
+        else if (key === "a") {
+            editorStore.setActiveTool("direct_select");
+            // If we already have a selection, keep it, otherwise do nothing special
+            // The direct select tool will render anchors for the selected path
+        } else if (key === "p")
             shift
                 ? editorStore.cycleToolGroup("pen")
                 : editorStore.useToolFromGroup("pen");
@@ -741,6 +846,33 @@
                                     stroke={path.stroke || "#000000"}
                                     stroke-width={path.strokeWidth || 1}
                                 />
+
+                                <!-- Direct Selection Anchors -->
+                                {#if $editorStore.activeTool === "direct_select" && $editorStore.selectedLayerId === layer.id && $editorStore.selectedPathId === path.id}
+                                    {#each path.commands as cmd, cmdIdx}
+                                        {#each cmd.points as pt, ptIdx}
+                                            <!-- Draw connection lines for control points if it's a bezier curve -->
+                                            <!-- This is a future enhancement for full bezier editing -->
+
+                                            <!-- Anchor Point -->
+                                            <circle
+                                                cx={pt.x}
+                                                cy={pt.y}
+                                                r={4 / $editorStore.zoom}
+                                                fill={selectedPoint?.commandIndex ===
+                                                    cmdIdx &&
+                                                selectedPoint?.pointIndex ===
+                                                    ptIdx
+                                                    ? "#3b82f6"
+                                                    : "#ffffff"}
+                                                stroke="#3b82f6"
+                                                stroke-width={1.5 /
+                                                    $editorStore.zoom}
+                                                pointer-events="none"
+                                            />
+                                        {/each}
+                                    {/each}
+                                {/if}
                             {/if}
                         {/each}
                     {/if}

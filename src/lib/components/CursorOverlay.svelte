@@ -29,7 +29,7 @@
 <svelte:window onpointermove={handlePointerMove} />
 
 <div
-    class="fixed pointer-events-none z-50 text-foreground"
+    class="fixed pointer-events-none z-50 text-black"
     style="left: 0; top: 0; transform: translate({x}px, {y}px); filter: drop-shadow(1px 0 0 white) drop-shadow(-1px 0 0 white) drop-shadow(0 1px 0 white) drop-shadow(0 -1px 0 white);"
 >
     <!-- 
