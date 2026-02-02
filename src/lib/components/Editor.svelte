@@ -16,6 +16,7 @@
     // Pen tool state
     let penPoints = $state<Point[]>([]);
     let penCurrentPos = $state<Point | null>(null);
+    let hasPenPoints = $derived(penPoints.length > 0);
 
     // Resize state
     type HandleType = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
@@ -356,10 +357,10 @@
     }
 
     function handleContextMenu(e: MouseEvent) {
+        e.preventDefault();
         // Right-click finishes pen path if in progress (keeps black segments, cancels blue preview)
-        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+        if ($editorStore.activeTool === "pen" && hasPenPoints) {
             finishPenPath();
-            e.preventDefault();
             e.stopPropagation();
         }
     }
@@ -384,7 +385,7 @@
         }
 
         // Pen tool: track cursor position for preview line
-        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+        if ($editorStore.activeTool === "pen" && hasPenPoints) {
             penCurrentPos = screenToCanvas(e.clientX, e.clientY);
         }
     }
@@ -503,13 +504,15 @@
     function finishPenPath() {
         if (penPoints.length < 2) {
             // Need at least 2 points to create a path
-            penPoints = [];
+            penPoints.length = 0; // Clear in-place
             penCurrentPos = null;
             return;
         }
 
         // Convert pen points to path commands
-        const commands: PathCommand[] = penPoints.map((pt, i) => ({
+        // Use $state.snapshot to unwrap the Svelte 5 proxy into a plain array for Immer consistency
+        const pointsSnapshot = $state.snapshot(penPoints);
+        const commands: PathCommand[] = pointsSnapshot.map((pt, i) => ({
             type: i === 0 ? "M" : "L",
             points: [pt],
         })) as PathCommand[];
@@ -545,7 +548,7 @@
         if (e.key === "Shift") shiftPressed = true;
 
         // Pen tool: Enter/Escape to finish path - Handle this early before other shortcuts
-        if ($editorStore.activeTool === "pen" && penPoints.length > 0) {
+        if ($editorStore.activeTool === "pen" && hasPenPoints) {
             if (e.key === "Enter" || e.key === "Escape" || e.key === "Esc") {
                 finishPenPath();
                 e.preventDefault();
@@ -582,7 +585,7 @@
 
         // Finish pen path when switching to any tool
         const toolKeys = ["v", "p", "m", "l", "t", "h"];
-        if (toolKeys.includes(key) && penPoints.length > 0) {
+        if (toolKeys.includes(key) && hasPenPoints) {
             finishPenPath();
         }
 
@@ -753,100 +756,131 @@
                     {/each}
                 {/if}
 
-                <!-- Selection Bounding Box -->
-                {#if selectionBounds && handlePositions}
+                <!-- Selection Visualization -->
+                {#if selectedPath}
                     {@const zoom = $editorStore.zoom}
-                    {@const padding = 4 / zoom}
-                    {@const handleSize = 8 / zoom}
-                    {@const handleOffset = handleSize / 2}
-                    {@const x = selectionBounds.minX - padding}
-                    {@const y = selectionBounds.minY - padding}
-                    {@const w =
-                        selectionBounds.maxX -
-                        selectionBounds.minX +
-                        padding * 2}
-                    {@const h =
-                        selectionBounds.maxY -
-                        selectionBounds.minY +
-                        padding * 2}
+                    {#if $editorStore.activeTool === "select"}
+                        {#if selectionBounds && handlePositions}
+                            {@const padding = 4 / zoom}
+                            {@const handleSize = 8 / zoom}
+                            {@const handleOffset = handleSize / 2}
+                            {@const x = selectionBounds.minX - padding}
+                            {@const y = selectionBounds.minY - padding}
+                            {@const w =
+                                selectionBounds.maxX -
+                                selectionBounds.minX +
+                                padding * 2}
+                            {@const h =
+                                selectionBounds.maxY -
+                                selectionBounds.minY +
+                                padding * 2}
 
-                    <!-- Bounding box -->
-                    <rect
-                        {x}
-                        {y}
-                        width={w}
-                        height={h}
-                        fill="none"
-                        stroke="#3b82f6"
-                        stroke-width={1 / zoom}
-                        stroke-dasharray="{4 / zoom} {2 / zoom}"
-                    />
-
-                    <!-- 8 resize handles with anti-overlap logic -->
-                    {#each Object.entries(handlePositions) as [handle, pos]}
-                        {@const isMid = handle.length === 1}
-
-                        <!-- Hide midpoints if shape is too small horizontally/vertically -->
-                        {@const midVisible =
-                            !isMid ||
-                            (handle === "n" || handle === "s"
-                                ? w > handleSize * 4
-                                : h > handleSize * 4)}
-
-                        <!-- Hide some corner handles if shape is extremely small to prevent full overlap -->
-                        {@const cornerVisible =
-                            !handle.includes("e") || w > handleSize * 1.5}
-                        {@const southVisible =
-                            !handle.includes("s") || h > handleSize * 1.5}
-
-                        {#if midVisible && cornerVisible && southVisible}
+                            <!-- Bounding box -->
                             <rect
-                                x={pos.x - handleOffset}
-                                y={pos.y - handleOffset}
-                                width={handleSize}
-                                height={handleSize}
-                                fill="#ffffff"
+                                {x}
+                                {y}
+                                width={w}
+                                height={h}
+                                fill="none"
                                 stroke="#3b82f6"
                                 stroke-width={1 / zoom}
-                                style="cursor: {getHandleCursor(
-                                    handle as HandleType,
-                                )}; pointer-events: auto;"
-                                onpointerdown={(e) =>
-                                    startResize(handle as HandleType, e)}
-                                role="button"
-                                aria-label="Resize handle {handle}"
-                                tabindex="-1"
+                                stroke-dasharray="{4 / zoom} {2 / zoom}"
                             />
 
-                            {#if isMid}
-                                <!-- Labels hide if shape is too small to avoid overlapping with corners -->
-                                {#if handle === "e" || handle === "w" ? h > handleSize * 5 : w > handleSize * 5}
-                                    <text
-                                        x={pos.x +
-                                            (handle === "e"
-                                                ? handleSize * 1.5
-                                                : handle === "w"
-                                                  ? -handleSize * 1.5
-                                                  : 0)}
-                                        y={pos.y +
-                                            (handle === "s"
-                                                ? handleSize * 1.5
-                                                : handle === "n"
-                                                  ? -handleSize * 1.5
-                                                  : 0)}
-                                        text-anchor="middle"
-                                        dominant-baseline="middle"
-                                        fill="#3b82f6"
-                                        font-size={10 / zoom}
-                                        font-weight="bold"
-                                        style="pointer-events: none; user-select: none;"
-                                    >
-                                        {handle.toUpperCase()}
-                                    </text>
+                            <!-- 8 resize handles with anti-overlap logic -->
+                            {#each Object.entries(handlePositions) as [handle, pos]}
+                                {@const isMid = handle.length === 1}
+
+                                <!-- Hide midpoints if shape is too small horizontally/vertically -->
+                                {@const midVisible =
+                                    !isMid ||
+                                    (handle === "n" || handle === "s"
+                                        ? w > handleSize * 4
+                                        : h > handleSize * 4)}
+
+                                <!-- Hide some corner handles if shape is extremely small to prevent full overlap -->
+                                {@const cornerVisible =
+                                    !handle.includes("e") ||
+                                    w > handleSize * 1.5}
+                                {@const southVisible =
+                                    !handle.includes("s") ||
+                                    h > handleSize * 1.5}
+
+                                {#if midVisible && cornerVisible && southVisible}
+                                    <rect
+                                        x={pos.x - handleOffset}
+                                        y={pos.y - handleOffset}
+                                        width={handleSize}
+                                        height={handleSize}
+                                        fill="#ffffff"
+                                        stroke="#3b82f6"
+                                        stroke-width={1 / zoom}
+                                        style="cursor: {getHandleCursor(
+                                            handle as HandleType,
+                                        )}; pointer-events: auto;"
+                                        onpointerdown={(e) =>
+                                            startResize(
+                                                handle as HandleType,
+                                                e,
+                                            )}
+                                        role="button"
+                                        aria-label="Resize handle {handle}"
+                                        tabindex="-1"
+                                    />
+
+                                    {#if isMid}
+                                        <!-- Labels hide if shape is too small to avoid overlapping with corners -->
+                                        {#if handle === "e" || handle === "w" ? h > handleSize * 5 : w > handleSize * 5}
+                                            <text
+                                                x={pos.x +
+                                                    (handle === "e"
+                                                        ? handleSize * 1.5
+                                                        : handle === "w"
+                                                          ? -handleSize * 1.5
+                                                          : 0)}
+                                                y={pos.y +
+                                                    (handle === "s"
+                                                        ? handleSize * 1.5
+                                                        : handle === "n"
+                                                          ? -handleSize * 1.5
+                                                          : 0)}
+                                                text-anchor="middle"
+                                                dominant-baseline="middle"
+                                                fill="#3b82f6"
+                                                font-size={10 / zoom}
+                                                font-weight="bold"
+                                                style="pointer-events: none; user-select: none;"
+                                            >
+                                                {handle.toUpperCase()}
+                                            </text>
+                                        {/if}
+                                    {/if}
                                 {/if}
-                            {/if}
+                            {/each}
                         {/if}
-                    {/each}
+                    {:else}
+                        <!-- Path Outline -->
+                        <path
+                            d={commandsToPathString(selectedPath.commands)}
+                            fill="none"
+                            stroke="#3b82f6"
+                            stroke-width={1.5 / zoom}
+                        />
+
+                        <!-- Anchor points -->
+                        {#each selectedPath.commands as cmd}
+                            {#each cmd.points as pt}
+                                <circle
+                                    cx={pt.x}
+                                    cy={pt.y}
+                                    r={3 / zoom}
+                                    fill="#ffffff"
+                                    stroke="#3b82f6"
+                                    stroke-width={1.5 / zoom}
+                                />
+                            {/each}
+                        {/each}
+                    {/if}
                 {/if}
             </svg>
         </div>
