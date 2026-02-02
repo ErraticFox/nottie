@@ -402,36 +402,68 @@
         if (isPanning) {
             isPanning = false;
         } else if (isDrawing) {
-            currentPos = screenToCanvas(e.clientX, e.clientY);
-            const commands = parsePreviewToCommands();
-            isDrawing = false;
-
-            if (commands.length > 0) {
-                const newPath: PathData = {
-                    id: "path-" + Math.random().toString(36).substring(2, 11),
-                    commands,
-                    stroke: "#000000",
-                    strokeWidth: 2,
-                    fill: "none",
-                    visible: true,
-                };
-
-                // Find an unlocked layer, or create one if none exist
-                let activeLayer = $animationStore.layers.find((l) => !l.locked);
-
-                if (!activeLayer) {
-                    // No unlocked layer exists, create Layer 1
-                    animationStore.addLayer("Layer 1");
-                    // The new layer is added at the beginning, re-read from store
-                    activeLayer = $animationStore.layers[0];
-                }
-
-                if (activeLayer) {
-                    animationStore.addPath(activeLayer.id, newPath);
-                }
-            }
+            finishDrawing();
         }
         canvasRef?.releasePointerCapture(e.pointerId);
+    }
+
+    function finishDrawing() {
+        if (!isDrawing) return;
+
+        const commands = parsePreviewToCommands();
+        isDrawing = false;
+
+        if (commands.length > 0) {
+            const newPath: PathData = {
+                id: "path-" + Math.random().toString(36).substring(2, 11),
+                commands,
+                stroke: "#000000",
+                strokeWidth: 2,
+                fill: "none",
+                visible: true,
+            };
+
+            // Find an unlocked layer, or create one if none exist
+            let activeLayer = $animationStore.layers.find((l) => !l.locked);
+
+            if (!activeLayer) {
+                // No unlocked layer exists, create Layer 1
+                animationStore.addLayer("Layer 1");
+                // The new layer is added at the beginning, re-read from store
+                activeLayer = $animationStore.layers[0];
+            }
+
+            if (activeLayer) {
+                animationStore.addPath(activeLayer.id, newPath);
+            }
+        }
+    }
+
+    function handleWindowBlur() {
+        // Commit any active operations when window loses focus
+
+        // 1. Pen Tool: Finish path
+        if ($editorStore.activeTool === "pen" && hasPenPoints) {
+            finishPenPath();
+        }
+
+        // 2. Shape Tools: Finish drawing
+        if (isDrawing) {
+            finishDrawing();
+        }
+
+        // 3. Resizing: Finish resize
+        if (isResizing) {
+            finishResize();
+        }
+
+        // 4. Panning: Stop panning
+        if (isPanning) {
+            isPanning = false;
+        }
+
+        // 5. Space key: release
+        isSpacePressed = false;
     }
 
     function parsePreviewToCommands(): PathCommand[] {
@@ -636,7 +668,11 @@
     }
 </script>
 
-<svelte:window onkeydown={handleKeyDown} onkeyup={handleKeyUp} />
+<svelte:window
+    onkeydown={handleKeyDown}
+    onkeyup={handleKeyUp}
+    onblur={handleWindowBlur}
+/>
 
 <div class="flex flex-col h-full">
     <!-- Main Canvas Area -->

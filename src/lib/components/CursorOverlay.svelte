@@ -49,15 +49,15 @@
     {:else if $editorStore.activeTool === "direct_select"}
         <MousePointer class="w-4 h-4 -translate-x-0.5 -translate-y-0.5" />
     {:else if $editorStore.activeTool === "pen"}
-        <PenTool class="w-4 h-4 -translate-y-full" />
+        <PenTool class="w-4 h-4 -translate-x-[1px] -translate-y-[14px]" />
     {:else if $editorStore.activeTool === "add_node"}
         <div class="relative">
-            <PenTool class="w-4 h-4 -translate-y-full" />
+            <PenTool class="w-4 h-4 -translate-x-[1px] -translate-y-[14px]" />
             <Plus class="w-2.5 h-2.5 absolute top-[-12px] left-2.5" />
         </div>
     {:else if $editorStore.activeTool === "remove_node"}
         <div class="relative">
-            <PenTool class="w-4 h-4 -translate-y-full" />
+            <PenTool class="w-4 h-4 -translate-x-[1px] -translate-y-[14px]" />
             <Minus class="w-2.5 h-2.5 absolute top-[-12px] left-2.5" />
         </div>
     {:else if $editorStore.activeTool === "square" || $editorStore.activeTool === "circle"}
