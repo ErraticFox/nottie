@@ -17,10 +17,12 @@
     import { editorStore } from "$lib/stores/editorStore";
     import { animationStore } from "$lib/stores/animationStore";
     import NewProjectDialog from "./NewProjectDialog.svelte";
+    import ChangelogDialog from "./ChangelogDialog.svelte";
 
     const history = animationStore.history;
 
     let isNewProjectDialogOpen = $state(false);
+    let isChangelogDialogOpen = $state(false);
 
     const selectTools = [
         { id: "select", icon: MousePointer2, label: "Select" },
@@ -123,6 +125,10 @@
             <Menubar.Menu>
                 <Menubar.Trigger>Help</Menubar.Trigger>
                 <Menubar.Content>
+                    <Menubar.Item onclick={() => (isChangelogDialogOpen = true)}
+                        >What's New</Menubar.Item
+                    >
+                    <Menubar.Separator />
                     <Menubar.Item>About</Menubar.Item>
                 </Menubar.Content>
             </Menubar.Menu>
@@ -257,3 +263,4 @@
 </header>
 
 <NewProjectDialog bind:open={isNewProjectDialogOpen} />
+<ChangelogDialog bind:open={isChangelogDialogOpen} />

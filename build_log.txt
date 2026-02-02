@@ -1,0 +1,67 @@
+$ vite build
+[36mvite v7.3.1 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+"produce" is imported from external module "immer" but never used in "src/lib/stores/animationStore.ts".
+[32mΓ£ô[39m 4542 modules transformed.
+rendering chunks...
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 4543 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m.svelte-kit/output/client/[22m[32m_app/version.json                       [39m[1m[2m  0.03 kB[22m[1m[22m[2m Γöé gzip:  0.05 kB[22m
+[2m.svelte-kit/output/client/[22m[32m.vite/manifest.json                     [39m[1m[2m  3.31 kB[22m[1m[22m[2m Γöé gzip:  0.63 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/2.BpcL6yKj.css    [39m[1m[2m  0.63 kB[22m[1m[22m[2m Γöé gzip:  0.22 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/0.diBi5aKG.css    [39m[1m[2m 45.50 kB[22m[1m[22m[2m Γöé gzip:  8.30 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/entry/start.BBokIvf4.js  [39m[1m[2m  0.08 kB[22m[1m[22m[2m Γöé gzip:  0.09 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CNKzZiKz.js       [39m[1m[2m  0.47 kB[22m[1m[22m[2m Γöé gzip:  0.30 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/BSdY3eFa.js       [39m[1m[2m  0.52 kB[22m[1m[22m[2m Γöé gzip:  0.33 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/1.kRk7169f.js      [39m[1m[2m  0.56 kB[22m[1m[22m[2m Γöé gzip:  0.35 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CcldKHq7.js       [39m[1m[2m  4.28 kB[22m[1m[22m[2m Γöé gzip:  2.04 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/C93QRAZI.js       [39m[1m[2m  4.62 kB[22m[1m[22m[2m Γöé gzip:  2.03 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Cy-UuKoP.js       [39m[1m[2m  5.30 kB[22m[1m[22m[2m Γöé gzip:  2.11 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/entry/app.DfLosAi9.js    [39m[1m[2m  5.31 kB[22m[1m[22m[2m Γöé gzip:  2.49 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/vhrACfYT.js       [39m[1m[2m  6.46 kB[22m[1m[22m[2m Γöé gzip:  3.01 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/0.CSXud-aG.js      [39m[1m[2m 13.95 kB[22m[1m[22m[2m Γöé gzip:  5.38 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/-aCXuJ9j.js       [39m[1m[2m 23.80 kB[22m[1m[22m[2m Γöé gzip:  9.41 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/B2Pwx6Eh.js       [39m[1m[2m 25.64 kB[22m[1m[22m[2m Γöé gzip: 10.07 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/2.ukvrKiAB.js      [39m[1m[2m298.88 kB[22m[1m[22m[2m Γöé gzip: 84.08 kB[22m
+[32mΓ£ô built in 9.34s[39m
+[2m.svelte-kit/output/server/[22m[32m.vite/manifest.json                         [39m[1m[2m  3.25 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_page.BpcL6yKj.css    [39m[1m[2m  0.63 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_layout.diBi5aKG.css  [39m[1m[2m 45.50 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/false.js                             [39m[1m[2m  0.04 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36minternal.js                                 [39m[1m[2m  0.33 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/index-server.js                      [39m[1m[2m  0.34 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/environment.js                       [39m[1m[2m  0.62 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/utils.js                             [39m[1m[2m  1.15 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/fallbacks/error.svelte.js           [39m[1m[2m  1.35 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/index.js                             [39m[1m[2m  1.43 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/context.js                           [39m[1m[2m  3.41 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/events.js                            [39m[1m[2m  3.93 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/exports.js                           [39m[1m[2m  5.59 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mremote-entry.js                             [39m[1m[2m 18.28 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/shared.js                            [39m[1m[2m 18.45 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/_layout.svelte.js             [39m[1m[2m 21.23 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/internal.js                          [39m[1m[2m 26.43 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/index2.js                            [39m[1m[2m 82.41 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mindex.js                                    [39m[1m[2m126.91 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/_page.svelte.js               [39m[1m[2m391.11 kB[22m[1m[22m
+[32mΓ£ô built in 19.30s[39m
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-vercel
+error during build:
+Error: Unsupported Node.js version: v25.0.0. Please use Node 20, 22, or 24 to build your project, or explicitly specify a runtime in your adapter configuration.
+    at get_default_runtime (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/adapter-vercel/utils.js:134:9)
+    at resolve_runtime (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/adapter-vercel/utils.js:118:46)
+    at adapt (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/adapter-vercel/index.js:273:21)
+    at adapt (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/kit/src/core/adapt/index.js:41:8)
+    at finalise (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/kit/src/exports/vite/index.js:1337:13)
+    at async Object.handler (file:///C:/Users/chase/Documents/nottie/node_modules/@sveltejs/kit/src/exports/vite/index.js:1368:5)
+    at async PluginDriver.hookParallel (file:///C:/Users/chase/Documents/nottie/node_modules/rollup/dist/es/shared/node-entry.js:22452:17)
+    at async Object.close (file:///C:/Users/chase/Documents/nottie/node_modules/rollup/dist/es/shared/node-entry.js:23471:13)
+    at async buildEnvironment (file:///C:/Users/chase/Documents/nottie/node_modules/vite/dist/node/chunks/config.js:33555:15)
+    at async Object.build (file:///C:/Users/chase/Documents/nottie/node_modules/vite/dist/node/chunks/config.js:33900:19)
+error: script "build" exited with code 1
