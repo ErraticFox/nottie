@@ -813,6 +813,9 @@
                                 )}; pointer-events: auto;"
                                 onpointerdown={(e) =>
                                     startResize(handle as HandleType, e)}
+                                role="button"
+                                aria-label="Resize handle {handle}"
+                                tabindex="-1"
                             />
 
                             {#if isMid}

@@ -1,68 +1,15 @@
-<script lang="ts">
-    import { animationStore } from "$lib/stores/animationStore";
-    import { editorStore } from "$lib/stores/editorStore";
-    import {
-        Eye,
-        EyeOff,
-        Lock,
-        Unlock,
-        ChevronRight,
-        ChevronDown,
-        Trash2,
-        Square,
-        Circle,
-        Plus,
-    } from "lucide-svelte";
-    import { cn } from "$lib/utils";
 
-    let { class: className } = $props();
+> nottie@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
 
-    // Track which layers are collapsed (all others are expanded by default)
-    let collapsedLayers = $state<Set<string>>(new Set());
+Loading svelte-check in workspace: c:\Users\chase\Documents\nottie
+Getting Svelte diagnostics...
 
-    function isExpanded(layerId: string) {
-        return !collapsedLayers.has(layerId);
-    }
-
-    function toggleExpand(layerId: string) {
-        if (collapsedLayers.has(layerId)) {
-            collapsedLayers.delete(layerId);
-        } else {
-            collapsedLayers.add(layerId);
-        }
-        collapsedLayers = new Set(collapsedLayers);
-    }
-
-    function getShapeName(path: { id: string }, index: number) {
-        return `Shape ${index + 1}`;
-    }
-
-    function handleLayerClick(layerId: string) {
-        editorStore.selectLayer(layerId);
-    }
-
-    function handlePathClick(layerId: string, pathId: string) {
-        editorStore.selectPath(layerId, pathId);
-    }
-</script>
-
-<div class={cn("flex flex-col bg-background border-r", className)}>
-    <div
-        class="h-10 flex items-center justify-between px-4 border-b font-medium text-sm text-muted-foreground select-none"
-    >
-        <span>Layers</span>
-        <button
-            class="p-1 hover:bg-muted rounded-sm transition-colors"
-            onclick={() => animationStore.addLayer()}
-            aria-label="Add layer"
-        >
-            <Plus size={14} />
-        </button>
-    </div>
-    <div class="flex-1 overflow-y-auto">
-        {#each $animationStore.layers as layer (layer.id)}
-            <!-- Layer Row -->
-            <div
+c:\Users\chase\Documents\nottie\[32msrc\lib\components\LayersPanel.svelte[39m:65:13
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m            <!-- Layer Row -->
+            [35m<div
                 class={cn(
                     "flex items-center h-9 px-2 border-b border-border/50 hover:bg-muted/50 transition-colors group select-none cursor-pointer",
                     $editorStore.selectedLayerId === layer.id &&
@@ -70,12 +17,6 @@
                         "bg-primary/10",
                 )}
                 onclick={() => handleLayerClick(layer.id)}
-                onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleLayerClick(layer.id);
-                    }
-                }}
                 role="button"
                 tabindex="0"
             >
@@ -151,24 +92,19 @@
                 >
                     <Trash2 size={14} />
                 </button>
-            </div>
+            </div>[36m[39m
 
-            <!-- Nested Shapes (when expanded) -->
-            {#if isExpanded(layer.id) && layer.paths.length > 0}
-                {#each layer.paths as path, index (path.id)}
-                    <div
+c:\Users\chase\Documents\nottie\[32msrc\lib\components\LayersPanel.svelte[39m:153:21
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m                {#each layer.paths as path, index (path.id)}
+                    [35m<div
                         class={cn(
                             "flex items-center h-8 pl-6 pr-2 border-b border-border/30 hover:bg-muted/30 transition-colors group select-none cursor-pointer",
                             $editorStore.selectedPathId === path.id &&
                                 "bg-primary/15",
                         )}
                         onclick={() => handlePathClick(layer.id, path.id)}
-                        onkeydown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                handlePathClick(layer.id, path.id);
-                            }
-                        }}
                         role="button"
                         tabindex="0"
                     >
@@ -214,9 +150,28 @@
                         >
                             <Trash2 size={12} />
                         </button>
-                    </div>
-                {/each}
-            {/if}
-        {/each}
-    </div>
-</div>
+                    </div>[36m
+                {/each}[39m
+
+c:\Users\chase\Documents\nottie\[32msrc\lib\components\Editor.svelte[39m:803:29
+[33mWarn[39m: `<rect>` with a pointerdown handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m                        {#if midVisible && cornerVisible && southVisible}
+                            [35m<rect
+                                x={pos.x - handleOffset}
+                                y={pos.y - handleOffset}
+                                width={handleSize}
+                                height={handleSize}
+                                fill="#ffffff"
+                                stroke="#3b82f6"
+                                stroke-width={1 / zoom}
+                                style="cursor: {getHandleCursor(
+                                    handle as HandleType,
+                                )}; pointer-events: auto;"
+                                onpointerdown={(e) =>
+                                    startResize(handle as HandleType, e)}
+                            />[36m[39m
+
+====================================
+[33msvelte-check found 0 errors and 3 warnings in 2 files
+[39m
