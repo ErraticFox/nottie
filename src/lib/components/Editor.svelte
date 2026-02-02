@@ -4,6 +4,7 @@
     import { animationStore } from "$lib/stores/animationStore";
     import { editorStore } from "$lib/stores/editorStore";
     import type { PathData, Point, PathCommand } from "$lib/types";
+    import CursorOverlay from "./CursorOverlay.svelte";
 
     let isPanning = $state(false);
     let isDrawing = $state(false);
@@ -12,6 +13,7 @@
     let startPos = $state<Point>({ x: 0, y: 0 });
     let currentPos = $state<Point>({ x: 0, y: 0 });
     let shiftPressed = $state(false);
+    let isHoveringCanvas = $state(false);
 
     // Pen tool state
     let penPoints = $state<Point[]>([]);
@@ -638,6 +640,12 @@
 
 <div class="flex flex-col h-full">
     <!-- Main Canvas Area -->
+
+    <!-- Custom Cursor Overlay -->
+    {#if isHoveringCanvas && !isPanning && !isResizing && !isSpacePressed}
+        <CursorOverlay />
+    {/if}
+
     <div
         bind:this={canvasRef}
         class="flex-1 relative m-4 rounded-lg bg-secondary/30 border shadow-inner overflow-hidden grid place-items-center touch-none"
@@ -647,19 +655,17 @@
         onpointerup={handlePointerUp}
         onpointercancel={handlePointerUp}
         oncontextmenu={handleContextMenu}
+        onpointerenter={() => (isHoveringCanvas = true)}
+        onpointerleave={() => (isHoveringCanvas = false)}
         style="cursor: {isPanning ||
         $editorStore.activeTool === 'hand' ||
         isSpacePressed
             ? isPanning
                 ? 'grabbing'
                 : 'grab'
-            : isDrawing
-              ? 'crosshair'
-              : $editorStore.activeTool === 'square' ||
-                  $editorStore.activeTool === 'circle' ||
-                  $editorStore.activeTool === 'pen'
-                ? 'crosshair'
-                : 'default'};"
+            : isResizing
+              ? getHandleCursor(resizeHandle!)
+              : 'none'};"
         role="presentation"
     >
         <div
