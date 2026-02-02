@@ -9,36 +9,28 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
     {
-        version: "1.0.1",
+        version: "0.1.0",
         date: "February 2, 2026",
         sections: [
             {
-                title: "New Features",
+                title: "What's New",
                 items: [
-                    "Added Direct Selection Tool for finer control over paths.",
-                    "Introduced Dark/Light theme support.",
+                    "Pen tool with bezier curves for creating custom vector paths",
+                    "Canvas with zoom controls (zoom in, zoom out, fit to screen)",
+                    "File menu with 'New Project' dialog to create animations",
+                    "Dark and light theme toggle based on system preferences",
+                    "Transform handles for resizing and moving shapes",
+                    "Vector selection and manipulation tools",
+                    "Shape tools for drawing rectangles and circles",
+                    "Layers panel for organizing your artwork",
+                    "Timeline panel for animation control",
                 ],
             },
             {
                 title: "Bug Fixes",
                 items: [
-                    "Fixed an issue where shapes were created with incorrect sizes.",
-                    "Resolved a bug with the Pen tool not finishing paths correctly.",
-                    "Improved cursor visibility and sizing.",
-                ],
-            },
-        ],
-    },
-    {
-        version: "1.0.0",
-        date: "January 20, 2026",
-        sections: [
-            {
-                title: "Launch",
-                items: [
-                    "Initial release of the animation editor.",
-                    "Basic drawing tools (Pen, Square, Circle).",
-                    "Timeline and Layers panel.",
+                    "Fixed scroll area component in changelog dialog",
+                    "Configured deployment settings for Vercel",
                 ],
             },
         ],
